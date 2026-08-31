@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kelompok KKN — LPPM Universitas Al-Ghifari</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+
+<main class="max-w-[1200px] mx-auto px-5 py-5">
+
+  <div class="flex flex-wrap items-center gap-3 mb-4">
+    <div id="segmenTahun" class="segmen" role="group" aria-label="Tahun ajaran"></div>
+    <div class="flex-1 min-w-[12rem]">
+      <label for="cari" class="sr-only">Cari kelompok</label>
+      <input id="cari" type="search" class="medan" spellcheck="false"
+             placeholder="Nama kelompok, lokasi, atau pembimbing">
+    </div>
+    <output id="ringkasan" class="font-data text-xs text-tinta-redup whitespace-nowrap"></output>
+    <button id="tombolTambah" class="tombol-utama">Tambah kelompok</button>
+  </div>
+
+  <div id="pesan" hidden role="alert"></div>
+
+  <div class="bg-kertas rounded-lg shadow-kartu overflow-hidden">
+    <div class="overflow-auto max-h-[calc(100vh-15rem)]">
+      <table class="register">
+        <thead>
+          <tr>
+            <th>Kelompok</th>
+            <th>Lokasi</th>
+            <th>Dosen pembimbing</th>
+            <th class="hidden sm:table-cell">NIDN</th>
+            <th>TA</th>
+            <th class="text-right">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody id="isiTabel"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Laci formulir. Muncul dari kanan supaya daftar di belakangnya tetap
+     terlihat — menambah kelompok biasanya dilakukan sambil melihat yang
+     sudah ada, bukan setelah melupakannya. -->
+<div id="tirai" class="tirai" hidden></div>
+<aside id="laci" class="laci" hidden aria-labelledby="judulLaci" role="dialog" aria-modal="true">
+  <form id="formKelompok" class="flex flex-col h-full" novalidate>
+    <div class="px-5 py-4 border-b border-garis">
+      <h2 id="judulLaci" class="judul-halaman text-lg">Tambah kelompok</h2>
+    </div>
+
+    <div class="flex-1 overflow-auto px-5 py-4 space-y-4">
+      <div id="pesanLaci" hidden role="alert"></div>
+
+      <div>
+        <label for="fKelompok" class="block text-sm font-medium mb-1.5">Nama kelompok</label>
+        <input id="fKelompok" name="kelompok" class="medan" required placeholder="mis. 23">
+      </div>
+      <div>
+        <label for="fTahun" class="block text-sm font-medium mb-1.5">Tahun ajaran</label>
+        <input id="fTahun" name="tahun_ajaran" class="medan font-data" required
+               placeholder="2025-2026" pattern="\d{4}-\d{4}">
+        <p class="text-xs text-tinta-redup mt-1">Bentuknya 2025-2026.</p>
+      </div>
+      <div>
+        <label for="fLokasi" class="block text-sm font-medium mb-1.5">Lokasi</label>
+        <input id="fLokasi" name="lokasi" class="medan" placeholder="Desa atau kecamatan">
+      </div>
+      <div>
+        <label for="fDosen" class="block text-sm font-medium mb-1.5">Dosen pembimbing</label>
+        <select id="fDosen" name="lecturer_id" class="medan">
+          <option value="">Belum ditentukan</option>
+        </select>
+        <p class="text-xs text-tinta-redup mt-1">
+          Hanya dosen berstatus pembimbing lapangan yang bisa dipilih.
+        </p>
+      </div>
+    </div>
+
+    <div class="px-5 py-4 border-t border-garis flex gap-2 justify-end">
+      <button type="button" id="tombolBatal" class="tombol-halus">Batal</button>
+      <button type="submit" id="tombolSimpan" class="tombol-utama">Simpan</button>
+    </div>
+  </form>
+</aside>
+
+<script src="/assets/js/config.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/ui.js"></script>
+<script src="/assets/js/nav.js"></script>
+<script src="/assets/js/laci.js"></script>
+<script>
+(function () {
+    "use strict";
+    if (!Auth.requireLogin()) return;
+    Nav.pasang("Kelompok KKN");
+
+    const isi = document.getElementById("isiTabel");
+    const pesan = document.getElementById("pesan");
+    const ringkasan = document.getElementById("ringkasan");
+    const segmen = document.getElementById("segmenTahun");
+    const inpCari = document.getElementById("cari");
+    const form = document.getElementById("formKelompok");
+    const laci = Laci.buat("laci", "tirai", "tombolBatal");
+    let tahun = "", sunting = null;
+
+    function baris(g) {
+        const tr = UI.el("tr");
+        tr.appendChild(UI.sel(String(g.kelompok || "").replace(/^kelompok\s+/i, ""), "kode"));
+        tr.appendChild(UI.sel(g.lokasi));
+        tr.appendChild(UI.sel(g.nama_dosen, "text-sm"));
+        tr.appendChild(UI.sel(g.nidn, "kode hidden sm:table-cell"));
+        tr.appendChild(UI.sel(g.tahun_ajaran, "kode whitespace-nowrap"));
+
+        const td = UI.el("td", "text-right whitespace-nowrap");
+        const ubah = UI.el("button", "tautan-aksi", "Ubah");
+        ubah.type = "button";
+        ubah.addEventListener("click", function () { bukaForm(g); });
+        const hapus = UI.el("button", "tautan-aksi text-galat ml-3", "Hapus");
+        hapus.type = "button";
+        hapus.addEventListener("click", function () { hapusKelompok(g); });
+        td.appendChild(ubah);
+        td.appendChild(hapus);
+        tr.appendChild(td);
+        return tr;
+    }
+
+    async function muat() {
+        UI.sembunyikan(pesan);
+        UI.kosongkan(isi);
+        const p = new URLSearchParams({ limit: "200" });
+        if (tahun) p.set("tahun_ajaran", tahun);
+        if (inpCari.value.trim()) p.set("q", inpCari.value.trim());
+        try {
+            const res = await Api.get("/api/groups?" + p.toString());
+            if (!res) return;
+            const rows = res.data || [];
+            if (!rows.length) {
+                const tr = UI.el("tr");
+                const td = UI.el("td", "text-center py-10 text-tinta-redup text-sm",
+                    "Belum ada kelompok yang cocok.");
+                td.colSpan = 6;
+                tr.appendChild(td);
+                isi.appendChild(tr);
+            } else {
+                rows.forEach(function (g) { isi.appendChild(baris(g)); });
+            }
+            ringkasan.textContent = (res.meta.total || 0) + " kelompok";
+        } catch (err) {
+            UI.pesan(pesan, err.message || "Gagal memuat kelompok.", "galat");
+        }
+    }
+
+    async function muatDosen() {
+        const sel = document.getElementById("fDosen");
+        try {
+            // Hanya DPL — server juga menolak yang bukan, tapi menawarkan
+            // pilihan yang pasti ditolak itu menjebak.
+            const res = await Api.get("/api/lecturers?dpl=1&limit=200");
+            if (!res) return;
+            (res.data || []).forEach(function (d) {
+                const o = UI.el("option", "", d.name + (d.nidn ? " · " + d.nidn : ""));
+                o.value = d.id;
+                sel.appendChild(o);
+            });
+        } catch (e) { /* pilihan opsional */ }
+    }
+
+    function bukaForm(g) {
+        sunting = g || null;
+        document.getElementById("judulLaci").textContent = g ? "Ubah kelompok" : "Tambah kelompok";
+        form.kelompok.value = g ? String(g.kelompok || "").replace(/^kelompok\s+/i, "") : "";
+        form.tahun_ajaran.value = g ? (g.tahun_ajaran || "") : (tahun || "");
+        form.lokasi.value = g ? (g.lokasi || "") : "";
+        form.lecturer_id.value = g ? (g.lecturer_id || "") : "";
+        UI.sembunyikan(document.getElementById("pesanLaci"));
+        laci.buka();
+    }
+
+    document.getElementById("tombolTambah").addEventListener("click", function () { bukaForm(null); });
+
+    form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const pl = document.getElementById("pesanLaci");
+        UI.sembunyikan(pl);
+        const tombol = document.getElementById("tombolSimpan");
+        tombol.disabled = true;
+        try {
+            const jalur = "/api/groups" + (sunting ? "?id=" + encodeURIComponent(sunting.id) : "");
+            await Api.post(jalur, {
+                kelompok: form.kelompok.value.trim(),
+                tahun_ajaran: form.tahun_ajaran.value.trim(),
+                lokasi: form.lokasi.value.trim(),
+                lecturer_id: form.lecturer_id.value,
+            });
+            laci.tutup();
+            muat();
+        } catch (err) {
+            UI.pesan(pl, err.message || "Gagal menyimpan.", "galat");
+        } finally {
+            tombol.disabled = false;
+        }
+    });
+
+    async function hapusKelompok(g) {
+        if (!window.confirm("Hapus kelompok " + g.kelompok + "?")) return;
+        try {
+            await Api.del("/api/groups/" + encodeURIComponent(g.id));
+            muat();
+        } catch (err) {
+            // Kelompok yang masih berisi peserta ditolak server; pesannya
+            // menyebut berapa peserta, jadi diteruskan apa adanya.
+            UI.pesan(pesan, err.message || "Gagal menghapus.", "galat");
+        }
+    }
+
+    function tombolTahun(nilai, label) {
+        const b = UI.el("button", "", label);
+        b.type = "button";
+        b.dataset.nilai = nilai;
+        b.setAttribute("aria-pressed", String(tahun === nilai));
+        b.addEventListener("click", function () {
+            tahun = nilai;
+            segmen.querySelectorAll("button").forEach(function (x) {
+                x.setAttribute("aria-pressed", String(x.dataset.nilai === nilai));
+            });
+            muat();
+        });
+        return b;
+    }
+
+    async function muatTahun() {
+        segmen.appendChild(tombolTahun("", "Semua"));
+        try {
+            const res = await Api.get("/api/academic-years");
+            if (res) (res.data || []).forEach(function (ta) { segmen.appendChild(tombolTahun(ta, ta)); });
+        } catch (e) { /* opsional */ }
+    }
+
+    let jeda;
+    inpCari.addEventListener("input", function () {
+        clearTimeout(jeda);
+        jeda = setTimeout(muat, 350);
+    });
+
+    muatTahun();
+    muatDosen();
+    muat();
+})();
+</script>
+</body>
+</html>

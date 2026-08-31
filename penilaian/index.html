@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Penilaian KKN — LPPM Universitas Al-Ghifari</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+
+<main class="max-w-[1060px] mx-auto px-5 py-5">
+
+  <!-- Pekerjaan dosen berbentuk per KELOMPOK, bukan per mahasiswa: satu
+       kelompok dinilai sekaligus dalam satu duduk. Karena itu kelompok yang
+       dipilih lebih dulu, baru anggotanya muncul. -->
+  <div class="flex flex-wrap items-end gap-3 mb-4">
+    <div>
+      <label for="pilihTahun" class="block eyebrow text-tinta-redup mb-1.5">Tahun ajaran</label>
+      <select id="pilihTahun" class="medan font-data w-40"></select>
+    </div>
+    <div class="flex-1 min-w-[16rem]">
+      <label for="pilihKelompok" class="block eyebrow text-tinta-redup mb-1.5">Kelompok</label>
+      <select id="pilihKelompok" class="medan w-full">
+        <option value="">Pilih kelompok…</option>
+      </select>
+    </div>
+    <output id="ringkasKelompok" class="font-data text-xs text-tinta-redup pb-2.5"></output>
+  </div>
+
+  <div id="pesan" hidden role="alert"></div>
+
+  <div id="kosong" class="bg-kertas rounded-lg shadow-kartu px-8 py-16 text-center">
+    <p class="text-tinta-redup">Pilih kelompok untuk mulai menilai.</p>
+    <p class="text-sm text-tinta-redup mt-2">
+      Nilai akhir dihitung sendiri dari lima aspek: rata-rata H, S, L, QP, dan QL.
+    </p>
+  </div>
+
+  <div id="wadahTabel" hidden class="bg-kertas rounded-lg shadow-kartu overflow-hidden">
+    <div class="overflow-auto max-h-[calc(100vh-16rem)]">
+      <table class="register">
+        <thead>
+          <tr>
+            <th>NIM</th>
+            <th>Nama</th>
+            <th class="text-center w-16">H</th>
+            <th class="text-center w-16">S</th>
+            <th class="text-center w-16">L</th>
+            <th class="text-center w-16">QP</th>
+            <th class="text-center w-16">QL</th>
+            <th class="w-24">Aspek</th>
+            <th class="text-right w-24">Nilai</th>
+          </tr>
+        </thead>
+        <tbody id="isiTabel"></tbody>
+      </table>
+    </div>
+    <p class="px-4 py-2.5 border-t border-garis-tipis text-xs text-tinta-redup">
+      Nilai tersimpan begitu Anda pindah dari kotaknya. Rentang 0–100.
+    </p>
+  </div>
+</main>
+
+<script src="/assets/js/config.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/ui.js"></script>
+<script src="/assets/js/nav.js"></script>
+<script>
+(function () {
+    "use strict";
+    if (!Auth.requireLogin()) return;
+    Nav.pasang("Penilaian KKN", "Lima aspek · H · S · L · QP · QL");
+
+    const selTahun = document.getElementById("pilihTahun");
+    const selKel = document.getElementById("pilihKelompok");
+    const ringkas = document.getElementById("ringkasKelompok");
+    const isi = document.getElementById("isiTabel");
+    const wadah = document.getElementById("wadahTabel");
+    const kosong = document.getElementById("kosong");
+    const pesan = document.getElementById("pesan");
+
+    const ASPEK = ["nilai_h", "nilai_s", "nilai_l", "nilai_qp", "nilai_ql"];
+
+    function hurufDari(n) {
+        // Disalin dari aturan aplikasi lama, termasuk celah di angka 44 yang
+        // tidak menghasilkan huruf apa pun. Server tetap yang berwenang;
+        // ini hanya supaya layar tidak berkedip menunggu jawaban.
+        if (n >= 80) return "A";
+        if (n >= 68 && n <= 79) return "B";
+        if (n >= 56 && n <= 67) return "C";
+        if (n >= 45 && n <= 55) return "D";
+        if (n < 44) return "E";
+        return "";
+    }
+
+    function gambarDeret(td, r) {
+        UI.kosongkan(td);
+        td.appendChild(UI.deretNilai(r).firstChild);
+    }
+
+    function baris(r) {
+        const tr = UI.el("tr");
+        tr.dataset.id = r.id;
+        tr.appendChild(UI.sel(r.nim, "kode whitespace-nowrap"));
+        tr.appendChild(UI.sel(r.name, "font-medium"));
+
+        const tdDeret = UI.el("td");
+        const tdNilai = UI.el("td", "text-right whitespace-nowrap");
+
+        function segarkan(data) {
+            gambarDeret(tdDeret, data);
+            UI.kosongkan(tdNilai);
+            if (data.nilai > 0) {
+                tdNilai.appendChild(UI.el("span", "font-data text-sm tabular-nums", data.nilai));
+                tdNilai.appendChild(UI.el("span", "huruf-mutu text-biru ml-1.5", hurufDari(data.nilai)));
+            } else {
+                tdNilai.appendChild(UI.el("span", "text-tinta-samar", "—"));
+            }
+        }
+
+        ASPEK.forEach(function (aspek) {
+            const td = UI.el("td", "text-center p-1");
+            const inp = document.createElement("input");
+            inp.type = "number";
+            inp.min = "0"; inp.max = "100"; inp.step = "1";
+            inp.className = "kotak-nilai";
+            inp.value = r[aspek] || "";
+            inp.setAttribute("aria-label", aspek.replace("nilai_", "").toUpperCase() + " untuk " + r.name);
+
+            inp.addEventListener("change", async function () {
+                const nilai = inp.value === "" ? 0 : Number(inp.value);
+                if (!Number.isInteger(nilai) || nilai < 0 || nilai > 100) {
+                    inp.classList.add("salah");
+                    UI.pesan(pesan, "Nilai harus bilangan bulat 0 sampai 100.", "galat");
+                    return;
+                }
+                inp.classList.remove("salah");
+                inp.classList.add("menyimpan");
+                try {
+                    const res = await Api.post("/api/grades/kkn",
+                        { id: r.id, field: aspek, nilai: nilai });
+                    if (!res) return;
+                    r[aspek] = nilai;
+                    r.nilai = res.data.nilai;
+                    segarkan(r);
+                    UI.sembunyikan(pesan);
+                    inp.classList.remove("menyimpan");
+                    inp.classList.add("tersimpan");
+                    setTimeout(function () { inp.classList.remove("tersimpan"); }, 2000);
+                } catch (err) {
+                    inp.classList.remove("menyimpan");
+                    inp.classList.add("salah");
+                    UI.pesan(pesan, err.message || "Gagal menyimpan nilai.", "galat");
+                }
+            });
+            td.appendChild(inp);
+            tr.appendChild(td);
+        });
+
+        tr.appendChild(tdDeret);
+        tr.appendChild(tdNilai);
+        segarkan(r);
+        return tr;
+    }
+
+    async function muatAnggota() {
+        const id = selKel.value;
+        if (!id) {
+            wadah.hidden = true;
+            kosong.hidden = false;
+            ringkas.textContent = "";
+            return;
+        }
+        kosong.hidden = true;
+        wadah.hidden = false;
+        UI.kosongkan(isi);
+
+        try {
+            const res = await Api.get("/api/participations?limit=200&group_id=" + encodeURIComponent(id));
+            if (!res) return;
+            const rows = res.data || [];
+            if (!rows.length) {
+                const tr = UI.el("tr");
+                const td = UI.el("td", "text-center py-10 text-tinta-redup text-sm",
+                    "Kelompok ini belum punya anggota.");
+                td.colSpan = 9;
+                tr.appendChild(td);
+                isi.appendChild(tr);
+                ringkas.textContent = "";
+                return;
+            }
+            rows.forEach(function (r) { isi.appendChild(baris(r)); });
+            const dinilai = rows.filter(function (r) { return r.nilai > 0; }).length;
+            ringkas.textContent = dinilai + " dari " + rows.length + " sudah dinilai";
+        } catch (err) {
+            UI.pesan(pesan, err.message || "Gagal memuat anggota kelompok.", "galat");
+        }
+    }
+
+    async function muatKelompok() {
+        const sebelumnya = selKel.value;
+        UI.kosongkan(selKel);
+        selKel.appendChild(UI.el("option", "", "Pilih kelompok…"));
+        try {
+            const p = new URLSearchParams({ limit: "200" });
+            if (selTahun.value) p.set("tahun_ajaran", selTahun.value);
+            const res = await Api.get("/api/groups?" + p.toString());
+            if (!res) return;
+            (res.data || []).forEach(function (g) {
+                const o = UI.el("option", "",
+                    String(g.kelompok).replace(/^kelompok\s+/i, "Kelompok ") +
+                    (g.lokasi ? " — " + g.lokasi : ""));
+                o.value = g.id;
+                selKel.appendChild(o);
+            });
+            if (!(res.data || []).length) {
+                selKel.appendChild(UI.el("option", "", "Tidak ada kelompok di tahun ini"));
+            }
+            // Kalau kelompok yang sedang dibuka masih ada di tahun yang baru
+            // dipilih, ia tetap terbuka — berpindah tahun lalu kehilangan
+            // tempat adalah gangguan, bukan fitur.
+            if (sebelumnya && selKel.querySelector('option[value="' + sebelumnya + '"]')) {
+                selKel.value = sebelumnya;
+            }
+        } catch (err) {
+            UI.pesan(pesan, err.message || "Gagal memuat kelompok.", "galat");
+        }
+        muatAnggota();
+    }
+
+    async function muatTahun() {
+        try {
+            const res = await Api.get("/api/academic-years");
+            if (!res) return;
+            const daftar = res.data || [];
+            daftar.forEach(function (ta) {
+                const o = UI.el("option", "", ta);
+                o.value = ta;
+                selTahun.appendChild(o);
+            });
+            // Tahun terbaru dipilih lebih dulu — itu yang sedang dikerjakan.
+            if (daftar.length) selTahun.value = daftar[0];
+        } catch (e) { /* saringan opsional */ }
+        muatKelompok();
+    }
+
+    selTahun.addEventListener("change", muatKelompok);
+    selKel.addEventListener("change", muatAnggota);
+    muatTahun();
+})();
+</script>
+</body>
+</html>

@@ -74,8 +74,8 @@
 
         pesan(el, teks, jenis) {
             if (!el) return;
-            const warna = jenis === "galat"
-                ? "bg-galat-muda text-galat"
+            const warna = jenis === "galat" ? "bg-galat-muda text-galat"
+                : jenis === "sah" ? "bg-sah-muda text-sah"
                 : "bg-belum-muda text-belum";
             el.className = "rounded-md px-3 py-2 text-sm mb-4 " + warna;
             el.textContent = teks;

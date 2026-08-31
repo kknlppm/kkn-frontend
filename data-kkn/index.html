@@ -11,24 +11,6 @@
 </head>
 <body>
 
-<div class="pita-atas" aria-hidden="true"></div>
-
-<header class="bg-kertas border-b border-garis">
-  <div class="max-w-[1400px] mx-auto px-5 h-16 flex items-center justify-between gap-4">
-    <div class="min-w-0">
-      <div class="judul-halaman text-lg leading-tight">Register KKN</div>
-      <div class="eyebrow">LPPM · Universitas Al-Ghifari</div>
-    </div>
-    <div class="flex items-center gap-4 shrink-0">
-      <div class="text-right hidden sm:block">
-        <div id="namaPengguna" class="text-sm font-medium leading-tight"></div>
-        <div id="peranPengguna" class="eyebrow"></div>
-      </div>
-      <button id="tombolKeluar" class="tombol-halus">Keluar</button>
-    </div>
-  </div>
-</header>
-
 <main class="max-w-[1400px] mx-auto px-5 py-5">
 
   <!-- Papan perintah. Tahun ajarannya cuma lima, jadi kelimanya ditampilkan
@@ -79,10 +61,12 @@
 <script src="/assets/js/auth.js"></script>
 <script src="/assets/js/api.js"></script>
 <script src="/assets/js/ui.js"></script>
+<script src="/assets/js/nav.js"></script>
 <script>
 (function () {
     "use strict";
     if (!Auth.requireLogin()) return;
+    Nav.pasang("Register KKN");
 
     const isi = document.getElementById("isiTabel");
     const pesan = document.getElementById("pesan");
@@ -95,11 +79,6 @@
     const KOLOM = 9;
 
     let halaman = 1, totalHalaman = 1, tahun = "";
-
-    const pengguna = Auth.getUser() || {};
-    document.getElementById("namaPengguna").textContent = pengguna.name || "";
-    document.getElementById("peranPengguna").textContent = pengguna.role_name || "";
-    document.getElementById("tombolKeluar").addEventListener("click", function () { Auth.logout(); });
 
     function barisPesan(teks) {
         const tr = UI.el("tr");

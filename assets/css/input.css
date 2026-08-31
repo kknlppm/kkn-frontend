@@ -83,6 +83,16 @@
         @apply text-biru bg-biru-muda;
     }
 
+    /* Tab navigasi. Yang aktif ditandai garis biru di kakinya — sama
+       arahnya dengan batang biru di kaki sertifikat. */
+    .tab-nav {
+        @apply px-3 py-2.5 text-sm text-tinta-redup border-b-2 border-transparent
+               whitespace-nowrap transition-colors hover:text-biru;
+    }
+    .tab-nav[aria-current="page"] {
+        @apply text-tinta font-medium border-biru;
+    }
+
     /* ── register ── */
     .register {
         @apply w-full border-collapse text-sm;
@@ -101,6 +111,41 @@
     }
     .kode {
         @apply font-data text-xs text-tinta-redup;
+    }
+
+    /* Kotak nilai. Lebar dipatok supaya kelima kolomnya tidak bergoyang
+       saat angkanya berubah panjang, dan penanda naik-turun bawaan peramban
+       dimatikan — dosen mengetik angka, bukan mengklik panah 80 kali. */
+    .kotak-nilai {
+        @apply w-14 text-center font-data text-sm bg-kertas
+               border border-garis rounded px-1 py-1
+               focus:border-biru focus:ring-0;
+        -moz-appearance: textfield;
+    }
+    .kotak-nilai::-webkit-outer-spin-button,
+    .kotak-nilai::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    .kotak-nilai.menyimpan { @apply border-biru bg-biru-muda; }
+    .kotak-nilai.tersimpan { @apply border-sah bg-sah-muda; }
+    .kotak-nilai.salah     { @apply border-galat bg-galat-muda; }
+
+    /* ── laci formulir ── */
+    .tirai {
+        @apply fixed inset-0 bg-tinta/25 z-40 opacity-0 transition-opacity duration-150;
+    }
+    .tirai.terbuka { @apply opacity-100; }
+
+    .laci {
+        @apply fixed inset-y-0 right-0 z-50 w-full max-w-md bg-kertas
+               border-l border-garis shadow-kartu
+               translate-x-full transition-transform duration-150;
+    }
+    .laci.terbuka { @apply translate-x-0; }
+
+    .tautan-aksi {
+        @apply text-sm text-biru hover:underline underline-offset-2;
     }
 
     /* ── penanda status ── */
@@ -136,6 +181,10 @@
 
 /* Gerak dihormati. Satu-satunya animasi adalah batang nilai yang tumbuh
    saat baris muncul; kalau pengguna memintanya berhenti, ia berhenti. */
+@media (prefers-reduced-motion: reduce) {
+    .laci, .tirai { transition: none !important; }
+}
+
 @media (prefers-reduced-motion: no-preference) {
     .deret-nilai i {
         animation: tumbuh 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;

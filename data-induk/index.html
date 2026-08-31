@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data induk — LPPM Universitas Al-Ghifari</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+
+<main class="max-w-[1200px] mx-auto px-5 py-5">
+
+  <div class="flex flex-wrap items-center gap-3 mb-4">
+    <div id="segmenEntitas" class="segmen" role="group" aria-label="Jenis data"></div>
+    <div class="flex-1 min-w-[12rem]">
+      <label for="cari" class="sr-only">Cari</label>
+      <input id="cari" type="search" class="medan" spellcheck="false" placeholder="Cari…">
+    </div>
+    <output id="ringkasan" class="font-data text-xs text-tinta-redup whitespace-nowrap"></output>
+    <button id="tombolTambah" class="tombol-utama">Tambah</button>
+  </div>
+
+  <div id="pesan" hidden role="alert"></div>
+
+  <div class="bg-kertas rounded-lg shadow-kartu overflow-hidden">
+    <div class="overflow-auto max-h-[calc(100vh-15rem)]">
+      <table class="register">
+        <thead><tr id="kepalaTabel"></tr></thead>
+        <tbody id="isiTabel"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div id="tirai" class="tirai" hidden></div>
+<aside id="laci" class="laci" hidden aria-labelledby="judulLaci" role="dialog" aria-modal="true">
+  <form id="formInduk" class="flex flex-col h-full" novalidate>
+    <div class="px-5 py-4 border-b border-garis">
+      <h2 id="judulLaci" class="judul-halaman text-lg">Tambah</h2>
+    </div>
+    <div class="flex-1 overflow-auto px-5 py-4 space-y-4">
+      <div id="pesanLaci" hidden role="alert"></div>
+      <div id="medanForm" class="space-y-4"></div>
+    </div>
+    <div class="px-5 py-4 border-t border-garis flex gap-2 justify-end">
+      <button type="button" id="tombolBatal" class="tombol-halus">Batal</button>
+      <button type="submit" id="tombolSimpan" class="tombol-utama">Simpan</button>
+    </div>
+  </form>
+</aside>
+
+<script src="/assets/js/config.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/ui.js"></script>
+<script src="/assets/js/nav.js"></script>
+<script src="/assets/js/laci.js"></script>
+<script>
+(function () {
+    "use strict";
+    if (!Auth.requireLogin()) return;
+    Nav.pasang("Data induk");
+
+    const u = Auth.getUser() || {};
+
+    // Keempat jenis data digambarkan sebagai data, bukan sebagai empat
+    // salinan kode. Yang berbeda hanya kolom dan medan formulirnya.
+    const ENTITAS = {
+        programs: {
+            label: "Program studi", tunggal: "program studi", jalur: "/api/programs",
+            kolom: [
+                { judul: "Program studi", ambil: function (r) { return r.prodi; }, kelas: "font-medium" },
+                { judul: "Fakultas", ambil: function (r) { return r.fakultas_id || "—"; }, kelas: "kode" },
+            ],
+            medan: [
+                { nama: "prodi", label: "Nama program studi", wajib: true },
+                { nama: "fakultas_id", label: "Kode fakultas", tipe: "number" },
+            ],
+            keluar: function (f) { return { prodi: f.prodi, fakultas_id: Number(f.fakultas_id) || 0 }; },
+        },
+        lecturers: {
+            label: "Dosen", tunggal: "dosen", jalur: "/api/lecturers",
+            kolom: [
+                { judul: "Nama", ambil: function (r) { return r.name; }, kelas: "font-medium" },
+                { judul: "NIDN", ambil: function (r) { return r.nidn; }, kelas: "kode" },
+                { judul: "Email", ambil: function (r) { return r.email; }, kelas: "text-xs text-tinta-redup" },
+                { judul: "Peran", ambil: function (r) {
+                    const p = [];
+                    if (r.status_dpl) p.push("DPL");
+                    if (r.status_dpmk) p.push("Pengampu");
+                    return p.join(" · ") || "—";
+                }, kelas: "kode" },
+            ],
+            medan: [
+                { nama: "name", label: "Nama lengkap", wajib: true },
+                { nama: "nidn", label: "NIDN", mono: true },
+                { nama: "email", label: "Email", tipe: "email" },
+                { nama: "status_dpl", label: "Pembimbing lapangan KKN (DPL)", tipe: "centang" },
+                { nama: "status_dpmk", label: "Pengampu mata kuliah", tipe: "centang" },
+            ],
+            keluar: function (f) {
+                return { name: f.name, nidn: f.nidn, email: f.email,
+                         status_dpl: !!f.status_dpl, status_dpmk: !!f.status_dpmk };
+            },
+        },
+        courses: {
+            label: "Mata kuliah", tunggal: "mata kuliah", jalur: "/api/courses",
+            kolom: [
+                { judul: "Mata kuliah", ambil: function (r) { return r.matkul; }, kelas: "font-medium" },
+                { judul: "Semester", ambil: function (r) { return r.semester || "—"; }, kelas: "kode" },
+                { judul: "SKS", ambil: function (r) { return r.sks; }, kelas: "kode" },
+            ],
+            medan: [
+                { nama: "matkul", label: "Nama mata kuliah", wajib: true },
+                { nama: "semester", label: "Semester", tipe: "number", petunjuk: "0 sampai 14" },
+                { nama: "sks", label: "SKS" },
+                { nama: "program_id", label: "Program studi", tipe: "pilih", sumber: "/api/programs?limit=200",
+                  nilai: "id", teks: "prodi" },
+            ],
+            keluar: function (f) {
+                return { matkul: f.matkul, semester: Number(f.semester) || 0,
+                         sks: f.sks, nidn: "", program_id: f.program_id };
+            },
+        },
+        users: {
+            label: "Pengguna", tunggal: "pengguna", jalur: "/api/users",
+            hanyaAdmin: true,
+            kolom: [
+                { judul: "Nama pengguna", ambil: function (r) { return r.uname; }, kelas: "kode" },
+                { judul: "Nama", ambil: function (r) { return r.name; }, kelas: "font-medium" },
+                { judul: "Peran", ambil: function (r) { return r.role_name || r.role; }, kelas: "kode" },
+                { judul: "Status", ambil: function (r) { return r.active ? "Aktif" : "Nonaktif"; }, kelas: "kode" },
+            ],
+            medan: [
+                { nama: "uname", label: "Nama pengguna", wajib: true, mono: true },
+                { nama: "name", label: "Nama lengkap", wajib: true },
+                { nama: "role", label: "Peran", tipe: "pilih", pilihan: [
+                    { nilai: 1, teks: "Admin" }, { nilai: 2, teks: "Pembayaran" },
+                    { nilai: 5, teks: "Validasi LPPM" }, { nilai: 6, teks: "Admin fakultas" },
+                ], petunjuk: "Akun mahasiswa dan dosen dibuat dari halaman datanya masing-masing." },
+                { nama: "password", label: "Sandi", tipe: "password",
+                  petunjuk: "Minimal 8 karakter. Kosongkan saat mengubah kalau sandinya tidak diganti." },
+                { nama: "active", label: "Akun aktif", tipe: "centang", bawaan: true },
+            ],
+            keluar: function (f) {
+                return { uname: f.uname, name: f.name, role: Number(f.role),
+                         active: !!f.active, password: f.password || "" };
+            },
+        },
+    };
+
+    const urutan = Object.keys(ENTITAS).filter(function (k) {
+        return !ENTITAS[k].hanyaAdmin || u.role === Nav.PERAN.ADMIN;
+    });
+    let kini = urutan[0], sunting = null;
+
+    const isi = document.getElementById("isiTabel");
+    const kepala = document.getElementById("kepalaTabel");
+    const pesan = document.getElementById("pesan");
+    const ringkasan = document.getElementById("ringkasan");
+    const segmen = document.getElementById("segmenEntitas");
+    const inpCari = document.getElementById("cari");
+    const medanForm = document.getElementById("medanForm");
+    const form = document.getElementById("formInduk");
+    const laci = Laci.buat("laci", "tirai", "tombolBatal");
+
+    function ent() { return ENTITAS[kini]; }
+
+    function gambarKepala() {
+        UI.kosongkan(kepala);
+        ent().kolom.forEach(function (k) { kepala.appendChild(UI.el("th", "", k.judul)); });
+        kepala.appendChild(UI.el("th", "text-right", "Tindakan"));
+    }
+
+    function baris(r) {
+        const tr = UI.el("tr");
+        ent().kolom.forEach(function (k) { tr.appendChild(UI.sel(k.ambil(r), k.kelas)); });
+        const td = UI.el("td", "text-right whitespace-nowrap");
+        const ubah = UI.el("button", "tautan-aksi", "Ubah");
+        ubah.type = "button";
+        ubah.addEventListener("click", function () { bukaForm(r); });
+        const hapus = UI.el("button", "tautan-aksi text-galat ml-3", "Hapus");
+        hapus.type = "button";
+        hapus.addEventListener("click", function () { hapusBaris(r); });
+        td.appendChild(ubah);
+        td.appendChild(hapus);
+        tr.appendChild(td);
+        return tr;
+    }
+
+    async function muat() {
+        UI.sembunyikan(pesan);
+        gambarKepala();
+        UI.kosongkan(isi);
+        const p = new URLSearchParams({ limit: "200" });
+        if (inpCari.value.trim()) p.set("q", inpCari.value.trim());
+        try {
+            const res = await Api.get(ent().jalur + "?" + p.toString());
+            if (!res) return;
+            const rows = res.data || [];
+            if (!rows.length) {
+                const tr = UI.el("tr");
+                const td = UI.el("td", "text-center py-10 text-tinta-redup text-sm",
+                    "Belum ada " + ent().tunggal + " yang cocok.");
+                td.colSpan = ent().kolom.length + 1;
+                tr.appendChild(td);
+                isi.appendChild(tr);
+            } else {
+                rows.forEach(function (r) { isi.appendChild(baris(r)); });
+            }
+            ringkasan.textContent = (res.meta.total || 0) + " " + ent().tunggal;
+        } catch (err) {
+            UI.pesan(pesan, err.message || "Gagal memuat data.", "galat");
+        }
+    }
+
+    async function gambarMedan(data) {
+        UI.kosongkan(medanForm);
+        for (const m of ent().medan) {
+            const bungkus = UI.el("div");
+            if (m.tipe === "centang") {
+                const l = UI.el("label", "flex items-center gap-2 text-sm");
+                const c = document.createElement("input");
+                c.type = "checkbox";
+                c.name = m.nama;
+                c.className = "w-4 h-4 accent-biru";
+                c.checked = data ? !!data[m.nama] : !!m.bawaan;
+                l.appendChild(c);
+                l.appendChild(document.createTextNode(m.label));
+                bungkus.appendChild(l);
+            } else if (m.tipe === "pilih") {
+                bungkus.appendChild(Object.assign(UI.el("label", "block text-sm font-medium mb-1.5", m.label),
+                    { htmlFor: "f_" + m.nama }));
+                const s = document.createElement("select");
+                s.id = "f_" + m.nama;
+                s.name = m.nama;
+                s.className = "medan";
+                s.appendChild(UI.el("option", "", "—"));
+                let opsi = m.pilihan;
+                if (!opsi && m.sumber) {
+                    try {
+                        const res = await Api.get(m.sumber);
+                        opsi = (res && res.data || []).map(function (x) {
+                            return { nilai: x[m.nilai], teks: x[m.teks] };
+                        });
+                    } catch (e) { opsi = []; }
+                }
+                (opsi || []).forEach(function (o) {
+                    const el = UI.el("option", "", o.teks);
+                    el.value = o.nilai;
+                    s.appendChild(el);
+                });
+                if (data && data[m.nama] != null) s.value = String(data[m.nama]);
+                bungkus.appendChild(s);
+            } else {
+                bungkus.appendChild(Object.assign(UI.el("label", "block text-sm font-medium mb-1.5", m.label),
+                    { htmlFor: "f_" + m.nama }));
+                const i = document.createElement("input");
+                i.id = "f_" + m.nama;
+                i.name = m.nama;
+                i.type = m.tipe || "text";
+                i.className = "medan" + (m.mono ? " font-data" : "");
+                if (m.wajib) i.required = true;
+                i.value = data ? (data[m.nama] == null ? "" : data[m.nama]) : "";
+                bungkus.appendChild(i);
+            }
+            if (m.petunjuk) bungkus.appendChild(UI.el("p", "text-xs text-tinta-redup mt-1", m.petunjuk));
+            medanForm.appendChild(bungkus);
+        }
+    }
+
+    async function bukaForm(r) {
+        sunting = r || null;
+        document.getElementById("judulLaci").textContent =
+            (r ? "Ubah " : "Tambah ") + ent().tunggal;
+        UI.sembunyikan(document.getElementById("pesanLaci"));
+        await gambarMedan(r);
+        laci.buka();
+    }
+
+    document.getElementById("tombolTambah").addEventListener("click", function () { bukaForm(null); });
+
+    form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const pl = document.getElementById("pesanLaci");
+        UI.sembunyikan(pl);
+        const tombol = document.getElementById("tombolSimpan");
+        tombol.disabled = true;
+        try {
+            const f = {};
+            ent().medan.forEach(function (m) {
+                const el = form.elements[m.nama];
+                if (!el) return;
+                f[m.nama] = m.tipe === "centang" ? el.checked : el.value.trim ? el.value.trim() : el.value;
+            });
+            const jalur = ent().jalur + (sunting ? "?id=" + encodeURIComponent(sunting.id) : "");
+            await Api.post(jalur, ent().keluar(f));
+            laci.tutup();
+            muat();
+        } catch (err) {
+            UI.pesan(pl, err.message || "Gagal menyimpan.", "galat");
+        } finally {
+            tombol.disabled = false;
+        }
+    });
+
+    async function hapusBaris(r) {
+        const nama = r.name || r.prodi || r.matkul || r.uname;
+        if (!window.confirm("Hapus " + ent().tunggal + " " + nama + "?")) return;
+        try {
+            await Api.del(ent().jalur + "/" + encodeURIComponent(r.id));
+            muat();
+        } catch (err) {
+            // Server menolak yang masih dipakai, dengan pesan yang menyebut
+            // berapa dan apa pemakainya. Diteruskan apa adanya.
+            UI.pesan(pesan, err.message || "Gagal menghapus.", "galat");
+        }
+    }
+
+    urutan.forEach(function (k) {
+        const b = UI.el("button", "", ENTITAS[k].label);
+        b.type = "button";
+        b.dataset.entitas = k;
+        b.setAttribute("aria-pressed", String(k === kini));
+        b.addEventListener("click", function () {
+            kini = k;
+            inpCari.value = "";
+            inpCari.placeholder = "Cari " + ENTITAS[k].tunggal + "…";
+            segmen.querySelectorAll("button").forEach(function (x) {
+                x.setAttribute("aria-pressed", String(x.dataset.entitas === k));
+            });
+            muat();
+        });
+        segmen.appendChild(b);
+    });
+
+    let jeda;
+    inpCari.addEventListener("input", function () {
+        clearTimeout(jeda);
+        jeda = setTimeout(muat, 350);
+    });
+
+    inpCari.placeholder = "Cari " + ent().tunggal + "…";
+    muat();
+})();
+</script>
+</body>
+</html>

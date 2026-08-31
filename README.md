@@ -76,11 +76,18 @@ celah XSS berarti sesi tercuri.** Karena itu:
 |---|---|
 | `index.html` | Pintu masuk; melempar ke `/login/` atau halaman sesuai peran |
 | `login/` | Halaman masuk |
-| `data-kkn/` | Daftar peserta KKN — paginasi, saringan tahun ajaran, pencarian |
+| `data-kkn/` | Register peserta KKN — paginasi, saringan tahun ajaran, pencarian |
+| `kelompok/` | Kelompok KKN — tambah, ubah, hapus; pembimbing hanya dari dosen DPL |
+| `penilaian/` | Penilaian lima aspek per kelompok, tersimpan saat pindah kotak |
+| `sertifikat/` | Menerbitkan sertifikat dan membuka PDF-nya |
+| `data-induk/` | Program studi, dosen, mata kuliah, pengguna |
+| `verifikasi/` | Verifikasi publik, tanpa login |
 | `assets/js/config.js` | Alamat backend. Tidak boleh memuat rahasia apa pun |
 | `assets/js/auth.js` | Penyimpanan token dan penjaga halaman |
 | `assets/js/api.js` | Pembungkus `fetch`, menyuntik header, menangani 401 |
 | `assets/js/ui.js` | Pembuat elemen yang selalu memakai `textContent` |
+| `assets/js/nav.js` | Kepala halaman dan navigasi yang mengikuti peran |
+| `assets/js/laci.js` | Laci formulir: fokus dipindah masuk, Escape menutup, Tab terjebak di dalam |
 
 Penjaga di frontend adalah **kenyamanan, bukan keamanan** — yang menegakkan
 izin adalah backend. Ia hanya supaya pengguna tidak melihat kerangka halaman

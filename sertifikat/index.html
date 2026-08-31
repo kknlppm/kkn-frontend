@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sertifikat — LPPM Universitas Al-Ghifari</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+
+<main class="max-w-[1200px] mx-auto px-5 py-5">
+
+  <div class="flex flex-wrap items-center gap-3 mb-4">
+    <div id="segmenTahun" class="segmen" role="group" aria-label="Tahun ajaran"></div>
+    <div id="segmenStatus" class="segmen" role="group" aria-label="Status sertifikat">
+      <button type="button" data-status="siap" aria-pressed="true">Siap terbit</button>
+      <button type="button" data-status="terbit" aria-pressed="false">Sudah terbit</button>
+    </div>
+    <div class="flex-1 min-w-[12rem]">
+      <label for="cari" class="sr-only">Cari peserta</label>
+      <input id="cari" type="search" class="medan" spellcheck="false" placeholder="NIM atau nama">
+    </div>
+    <output id="ringkasan" class="font-data text-xs text-tinta-redup whitespace-nowrap"></output>
+  </div>
+
+  <p class="text-sm text-tinta-redup mb-4" id="keteranganTapis">
+    Peserta yang sudah punya nilai KKN tapi sertifikatnya belum diterbitkan.
+  </p>
+
+  <div id="pesan" hidden role="alert"></div>
+
+  <div class="bg-kertas rounded-lg shadow-kartu overflow-hidden">
+    <div class="overflow-auto max-h-[calc(100vh-17rem)]">
+      <table class="register">
+        <thead>
+          <tr>
+            <th>NIM</th>
+            <th>Nama</th>
+            <th class="hidden md:table-cell">Kelompok</th>
+            <th>TA</th>
+            <th class="text-right">Nilai</th>
+            <th class="text-right">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody id="isiTabel"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="/assets/js/config.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/ui.js"></script>
+<script src="/assets/js/nav.js"></script>
+<script>
+(function () {
+    "use strict";
+    if (!Auth.requireLogin()) return;
+    Nav.pasang("Sertifikat KKN");
+
+    const isi = document.getElementById("isiTabel");
+    const pesan = document.getElementById("pesan");
+    const ringkasan = document.getElementById("ringkasan");
+    const ket = document.getElementById("keteranganTapis");
+    const segTahun = document.getElementById("segmenTahun");
+    const segStatus = document.getElementById("segmenStatus");
+    const inpCari = document.getElementById("cari");
+    let tahun = "", status = "siap";
+
+    function tombolUnduh(r) {
+        // Dibuka di tab baru, bukan diunduh paksa: orang biasanya ingin
+        // MELIHAT sertifikatnya dulu sebelum menyimpannya.
+        const a = UI.el("a", "tautan-aksi", "Lihat PDF");
+        a.href = Api.base + "/api/certificates/" + encodeURIComponent(r.id) + "/pdf";
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.addEventListener("click", async function (e) {
+            // Berkas PDF butuh header Authorization, dan tautan biasa tidak
+            // membawanya. Jadi diambil sebagai blob lalu dibuka.
+            e.preventDefault();
+            try {
+                const res = await fetch(a.href, {
+                    headers: { Authorization: "Bearer " + Auth.getToken() },
+                });
+                if (!res.ok) throw new Error("Gagal mengambil sertifikat.");
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                window.open(url, "_blank", "noopener");
+                setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+            } catch (err) {
+                UI.pesan(pesan, err.message || "Gagal membuka sertifikat.", "galat");
+            }
+        });
+        return a;
+    }
+
+    function baris(r) {
+        const tr = UI.el("tr");
+        tr.appendChild(UI.sel(r.nim, "kode whitespace-nowrap"));
+        tr.appendChild(UI.sel(r.name, "font-medium"));
+        tr.appendChild(UI.sel(String(r.kelompok || "").replace(/^kelompok\s+/i, ""), "kode hidden md:table-cell"));
+        tr.appendChild(UI.sel(r.tahun_ajaran, "kode whitespace-nowrap"));
+
+        const tdNilai = UI.el("td", "text-right whitespace-nowrap");
+        tdNilai.appendChild(UI.el("span", "font-data text-sm tabular-nums", r.nilai || "—"));
+        if (r.huruf) tdNilai.appendChild(UI.el("span", "huruf-mutu text-biru ml-1.5", r.huruf));
+        tr.appendChild(tdNilai);
+
+        const td = UI.el("td", "text-right whitespace-nowrap");
+        if (r.has_cert) {
+            td.appendChild(tombolUnduh(r));
+        } else {
+            const b = UI.el("button", "tombol-halus py-1 px-3 text-xs", "Terbitkan");
+            b.type = "button";
+            b.addEventListener("click", async function () {
+                b.disabled = true;
+                b.textContent = "Menerbitkan…";
+                try {
+                    const res = await Api.post("/api/certificates/" + encodeURIComponent(r.id) + "/issue", {});
+                    if (!res) return;
+                    UI.pesan(pesan, "Sertifikat " + res.data.no_sertifikat + " diterbitkan untuk " + r.name + ".", "sah");
+                    muat();
+                } catch (err) {
+                    b.disabled = false;
+                    b.textContent = "Terbitkan";
+                    UI.pesan(pesan, err.message || "Gagal menerbitkan.", "galat");
+                }
+            });
+            td.appendChild(b);
+        }
+        tr.appendChild(td);
+        return tr;
+    }
+
+    async function muat() {
+        UI.kosongkan(isi);
+        ket.textContent = status === "siap"
+            ? "Peserta yang sudah punya nilai KKN tapi sertifikatnya belum diterbitkan."
+            : "Peserta yang sertifikatnya sudah terbit. Nomor dan tokennya tidak berubah lagi.";
+
+        // Disaring di SERVER, bukan di sini. Hanya 139 dari 1.778
+        // keikutsertaan punya sertifikat; menyaring satu halaman hasil di
+        // peramban membuat "sudah terbit" hampir selalu kosong.
+        const p = new URLSearchParams({ limit: "100", cert: status });
+        if (tahun) p.set("tahun_ajaran", tahun);
+        if (inpCari.value.trim()) p.set("q", inpCari.value.trim());
+
+        try {
+            const res = await Api.get("/api/participations?" + p.toString());
+            if (!res) return;
+            const rows = res.data || [];
+            if (!rows.length) {
+                const tr = UI.el("tr");
+                const td = UI.el("td", "text-center py-10 text-tinta-redup text-sm",
+                    status === "siap"
+                        ? "Tidak ada yang siap diterbitkan pada tapisan ini."
+                        : "Belum ada sertifikat terbit pada tapisan ini.");
+                td.colSpan = 6;
+                tr.appendChild(td);
+                isi.appendChild(tr);
+            } else {
+                rows.forEach(function (r) { isi.appendChild(baris(r)); });
+            }
+            const total = (res.meta && res.meta.total) || rows.length;
+            ringkasan.textContent = total.toLocaleString("id-ID") + " peserta" +
+                (total > rows.length ? " · menampilkan " + rows.length : "");
+        } catch (err) {
+            UI.pesan(pesan, err.message || "Gagal memuat data.", "galat");
+        }
+    }
+
+    segStatus.querySelectorAll("button").forEach(function (b) {
+        b.addEventListener("click", function () {
+            status = b.dataset.status;
+            segStatus.querySelectorAll("button").forEach(function (x) {
+                x.setAttribute("aria-pressed", String(x.dataset.status === status));
+            });
+            muat();
+        });
+    });
+
+    function tombolTahun(nilai, label) {
+        const b = UI.el("button", "", label);
+        b.type = "button";
+        b.dataset.nilai = nilai;
+        b.setAttribute("aria-pressed", String(tahun === nilai));
+        b.addEventListener("click", function () {
+            tahun = nilai;
+            segTahun.querySelectorAll("button").forEach(function (x) {
+                x.setAttribute("aria-pressed", String(x.dataset.nilai === nilai));
+            });
+            muat();
+        });
+        return b;
+    }
+
+    async function muatTahun() {
+        segTahun.appendChild(tombolTahun("", "Semua"));
+        try {
+            const res = await Api.get("/api/academic-years");
+            if (res) (res.data || []).forEach(function (ta) { segTahun.appendChild(tombolTahun(ta, ta)); });
+        } catch (e) { /* opsional */ }
+    }
+
+    let jeda;
+    inpCari.addEventListener("input", function () {
+        clearTimeout(jeda);
+        jeda = setTimeout(muat, 350);
+    });
+
+    muatTahun();
+    muat();
+})();
+</script>
+</body>
+</html>
