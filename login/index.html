@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="unfari">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masuk — KKN LPPM UNFARI</title>
+  <meta name="description" content="Aplikasi KKN Lembaga Penelitian dan Pengabdian kepada Masyarakat Universitas Al-Ghifari">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body class="bg-base-200 font-sans">
+
+<div class="min-h-screen flex items-center justify-center p-4">
+  <div class="card w-full max-w-md bg-base-100 shadow-xl">
+    <div class="card-body">
+
+      <div class="text-center mb-6">
+        <h1 class="text-2xl font-bold text-primary">KKN LPPM</h1>
+        <p class="text-sm text-base-content/60 mt-1">Universitas Al-Ghifari</p>
+      </div>
+
+      <div id="pesan" class="hidden" role="alert"></div>
+
+      <form id="formMasuk" class="space-y-4" novalidate>
+        <div class="form-control">
+          <label class="label" for="uname"><span class="label-text font-medium">Nama pengguna</span></label>
+          <input id="uname" name="uname" type="text" class="input input-bordered w-full"
+                 required autofocus autocomplete="username" spellcheck="false"
+                 placeholder="NIM untuk mahasiswa">
+        </div>
+
+        <div class="form-control">
+          <label class="label" for="password"><span class="label-text font-medium">Sandi</span></label>
+          <input id="password" name="password" type="password" class="input input-bordered w-full"
+                 required autocomplete="current-password" placeholder="••••••••">
+        </div>
+
+        <button type="submit" id="tombolMasuk" class="btn btn-primary w-full">Masuk</button>
+      </form>
+
+      <p class="text-xs text-base-content/50 text-center mt-4">
+        Mahasiswa masuk memakai NIM.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/config.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/ui.js"></script>
+<script>
+(function () {
+    "use strict";
+    if (!Auth.requireGuest()) return;
+
+    const form = document.getElementById("formMasuk");
+    const tombol = document.getElementById("tombolMasuk");
+    const pesan = document.getElementById("pesan");
+
+    form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        UI.sembunyikan(pesan);
+        tombol.disabled = true;
+        tombol.textContent = "Memproses…";
+
+        try {
+            const res = await Api.post("/auth/login", {
+                uname: document.getElementById("uname").value.trim(),
+                password: document.getElementById("password").value,
+            });
+            if (res && res.data && res.data.token) {
+                Auth.setSession(res.data.token, res.data.user);
+                window.location.href = Auth.landing();
+                return;
+            }
+            UI.pesan(pesan, "Jawaban server tidak dikenali.", "error");
+        } catch (err) {
+            UI.pesan(pesan, err.message || "Gagal masuk.", "error");
+        } finally {
+            tombol.disabled = false;
+            tombol.textContent = "Masuk";
+        }
+    });
+})();
+</script>
+</body>
+</html>

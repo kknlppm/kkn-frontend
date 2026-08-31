@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="unfari">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data KKN — KKN LPPM UNFARI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body class="bg-base-200 font-sans min-h-screen">
+
+<div class="navbar bg-base-100 shadow-sm sticky top-0 z-10">
+  <div class="flex-1 px-4">
+    <span class="text-lg font-bold text-primary">KKN LPPM</span>
+    <span class="text-sm text-base-content/50 ml-2 hidden sm:inline">Universitas Al-Ghifari</span>
+  </div>
+  <div class="flex-none px-4 flex items-center gap-3">
+    <div class="text-right hidden sm:block">
+      <div id="namaPengguna" class="text-sm font-medium"></div>
+      <div id="peranPengguna" class="text-xs text-base-content/50"></div>
+    </div>
+    <button id="tombolKeluar" class="btn btn-ghost btn-sm">Keluar</button>
+  </div>
+</div>
+
+<main class="p-4 max-w-7xl mx-auto">
+
+  <div class="flex flex-wrap items-end gap-3 mb-4">
+    <div class="form-control">
+      <label class="label pb-1" for="tahunAjaran"><span class="label-text text-xs">Tahun ajaran</span></label>
+      <select id="tahunAjaran" class="select select-bordered select-sm w-44">
+        <option value="">Semua tahun</option>
+      </select>
+    </div>
+    <div class="form-control flex-1 min-w-[12rem]">
+      <label class="label pb-1" for="cari"><span class="label-text text-xs">Cari</span></label>
+      <input id="cari" type="search" class="input input-bordered input-sm w-full"
+             placeholder="NIM, nama, atau judul KKN" spellcheck="false">
+    </div>
+    <div class="text-sm text-base-content/60 pb-1">
+      <span id="ringkasan">memuat…</span>
+    </div>
+  </div>
+
+  <div id="pesan" class="hidden" role="alert"></div>
+
+  <div class="bg-base-100 rounded-lg shadow-sm overflow-hidden">
+    <div class="overflow-x-auto max-h-[70vh]">
+      <table class="table table-sm table-zebra tabel-lengket">
+        <thead class="bg-base-200">
+          <tr>
+            <th>NIM</th>
+            <th>Nama</th>
+            <th>Program studi</th>
+            <th>Kelompok</th>
+            <th>TA</th>
+            <th>Judul KKN</th>
+            <th class="text-right">Nilai</th>
+            <th>Sertifikat</th>
+          </tr>
+        </thead>
+        <tbody id="isiTabel">
+          <tr><td colspan="8" class="text-center py-8 text-base-content/50">Memuat…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between mt-4 gap-3">
+    <button id="sebelumnya" class="btn btn-sm" disabled>← Sebelumnya</button>
+    <span id="posisiHalaman" class="text-sm text-base-content/60"></span>
+    <button id="berikutnya" class="btn btn-sm" disabled>Berikutnya →</button>
+  </div>
+</main>
+
+<script src="/assets/js/config.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/ui.js"></script>
+<script>
+(function () {
+    "use strict";
+    if (!Auth.requireLogin()) return;
+
+    const isi = document.getElementById("isiTabel");
+    const pesan = document.getElementById("pesan");
+    const ringkasan = document.getElementById("ringkasan");
+    const posisi = document.getElementById("posisiHalaman");
+    const selTahun = document.getElementById("tahunAjaran");
+    const inpCari = document.getElementById("cari");
+    const btnPrev = document.getElementById("sebelumnya");
+    const btnNext = document.getElementById("berikutnya");
+
+    let halaman = 1;
+    let totalHalaman = 1;
+
+    const pengguna = Auth.getUser() || {};
+    document.getElementById("namaPengguna").textContent = pengguna.name || "";
+    document.getElementById("peranPengguna").textContent = pengguna.role_name || "";
+
+    document.getElementById("tombolKeluar").addEventListener("click", function () {
+        Auth.logout();
+    });
+
+    function statusBayar(kode) {
+        // Dipetakan dari daftar tertutup; nilai tak dikenal jatuh ke "—".
+        if (kode === 1) return ["Lunas", "success"];
+        if (kode === 2) return ["Sebagian", "warning"];
+        return ["Belum", "ghost"];
+    }
+
+    function gambarBaris(r) {
+        const tr = document.createElement("tr");
+        tr.appendChild(UI.sel(r.nim, "font-mono text-xs"));
+
+        // Nama bisa memuat karakter apa pun — selalu textContent, tidak pernah
+        // innerHTML. Lihat catatan di assets/js/auth.js.
+        const tdNama = UI.sel(r.name, "font-medium");
+        if (r.ketua) {
+            tdNama.appendChild(document.createTextNode(" "));
+            tdNama.appendChild(UI.lencana("ketua", "warning"));
+        }
+        tr.appendChild(tdNama);
+
+        tr.appendChild(UI.sel(r.prodi, "text-xs"));
+        tr.appendChild(UI.sel(r.kelompok, "text-xs"));
+        tr.appendChild(UI.sel(r.tahun_ajaran, "text-xs whitespace-nowrap"));
+        tr.appendChild(UI.sel(r.judul_kkn, "text-xs max-w-xs truncate"));
+        tr.appendChild(UI.sel(r.nilai || "—", "text-right font-mono"));
+        tr.appendChild(r.has_cert
+            ? UI.selLencana("terbit", "success")
+            : UI.selLencana("belum", "ghost"));
+        return tr;
+    }
+
+    function barisPesan(teks) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 8;
+        td.className = "text-center py-8 text-base-content/50";
+        td.textContent = teks;
+        tr.appendChild(td);
+        return tr;
+    }
+
+    async function muat() {
+        UI.sembunyikan(pesan);
+        UI.kosongkan(isi);
+        isi.appendChild(barisPesan("Memuat…"));
+
+        const p = new URLSearchParams({ page: String(halaman), limit: "50" });
+        if (selTahun.value) p.set("tahun_ajaran", selTahun.value);
+        if (inpCari.value.trim()) p.set("q", inpCari.value.trim());
+
+        try {
+            const res = await Api.get("/api/participations?" + p.toString());
+            if (!res) return; // 401 sudah ditangani api.js
+
+            UI.kosongkan(isi);
+            const baris = res.data || [];
+            if (baris.length === 0) {
+                isi.appendChild(barisPesan("Tidak ada data yang cocok."));
+            } else {
+                baris.forEach(function (r) { isi.appendChild(gambarBaris(r)); });
+            }
+
+            const m = res.meta || {};
+            totalHalaman = m.total_pages || 1;
+            ringkasan.textContent = (m.total || 0).toLocaleString("id-ID") + " peserta";
+            posisi.textContent = "Halaman " + (m.page || 1) + " dari " + totalHalaman;
+            btnPrev.disabled = (m.page || 1) <= 1;
+            btnNext.disabled = (m.page || 1) >= totalHalaman;
+        } catch (err) {
+            UI.kosongkan(isi);
+            isi.appendChild(barisPesan("Gagal memuat."));
+            UI.pesan(pesan, err.message || "Gagal memuat data.", "error");
+        }
+    }
+
+    async function muatTahun() {
+        try {
+            const res = await Api.get("/api/academic-years");
+            if (!res) return;
+            (res.data || []).forEach(function (ta) {
+                const o = document.createElement("option");
+                o.value = ta;
+                o.textContent = ta;
+                selTahun.appendChild(o);
+            });
+        } catch (e) { /* saringan opsional; daftarnya tetap bisa dibuka */ }
+    }
+
+    selTahun.addEventListener("change", function () { halaman = 1; muat(); });
+    btnPrev.addEventListener("click", function () { if (halaman > 1) { halaman--; muat(); } });
+    btnNext.addEventListener("click", function () { if (halaman < totalHalaman) { halaman++; muat(); } });
+
+    // Pencarian ditunda supaya tiap ketukan tidak jadi satu permintaan.
+    let jeda;
+    inpCari.addEventListener("input", function () {
+        clearTimeout(jeda);
+        jeda = setTimeout(function () { halaman = 1; muat(); }, 350);
+    });
+
+    muatTahun();
+    muat();
+})();
+</script>
+</body>
+</html>

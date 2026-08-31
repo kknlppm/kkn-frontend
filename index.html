@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="unfari">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KKN LPPM UNFARI</title>
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body class="bg-base-200">
+  <div class="min-h-screen flex items-center justify-center">
+    <span class="loading loading-spinner loading-lg text-primary"></span>
+  </div>
+  <script src="/assets/js/config.js"></script>
+  <script src="/assets/js/auth.js"></script>
+  <script>
+    // Pintu masuk: yang sudah punya sesi langsung ke halamannya.
+    window.location.replace(Auth.isLoggedIn() ? Auth.landing() : "/login/");
+  </script>
+</body>
+</html>

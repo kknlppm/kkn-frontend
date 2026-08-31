@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tabel panjang: kepala kolom menempel supaya masih terbaca saat menggulir
+   1.778 baris. */
+@layer components {
+    .tabel-lengket thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+}

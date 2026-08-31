@@ -1,0 +1,59 @@
+# Deploy situs statis ke GitHub Pages.
+#
+# BELUM AKTIF. Ditulis supaya siap, bukan supaya jalan — seluruh pekerjaan
+# berlangsung di lokal dan aplikasi live tidak disentuh.
+#
+# Sebelum menyalakannya:
+#   - CNAME menunjuk domain yang DNS-nya benar-benar sudah diarahkan
+#   - assets/js/api.js sudah memuat URL Cloud Function yang sebenarnya
+#   - izin institusi atas data mahasiswa di Google Cloud
+#
+# Untuk menyalakan: hapus baris `if: false`.
+
+name: Deploy ke GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: false # ← BELUM AKTIF. Lihat catatan di atas.
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build CSS
+        run: npm run build
+
+      - name: Buang node_modules sebelum unggah
+        # node_modules TIDAK boleh ikut ke artifact Pages: besar, dan bukan
+        # bagian dari situs. app.css sudah dibangun di langkah sebelumnya.
+        run: rm -rf node_modules
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - id: deployment
+        uses: actions/deploy-pages@v4

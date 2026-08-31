@@ -1,0 +1,4 @@
+node_modules/
+# Hasil build; GitHub Actions membangunnya ulang tiap deploy.
+assets/css/app.css
+.DS_Store
