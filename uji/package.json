@@ -1,0 +1,9 @@
+{
+    "name": "kkn-frontend-uji",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "semua": "node uji-frontend.mjs && node uji-verifikasi.mjs"
+    },
+    "devDependencies": { "playwright": "^1.62.1" }
+}

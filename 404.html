@@ -16,5 +16,17 @@
       </div>
     </div>
   </div>
+  <script>
+  (function () {
+      // GitHub Pages menyajikan berkas statis, jadi /verifikasi/<token> tidak
+      // punya berkas sendiri dan jatuh ke sini. QR pada 140+ sertifikat yang
+      // sudah tercetak menunjuk bentuk jalur itu dan TIDAK BISA diubah —
+      // jadi jalurnya yang harus tetap bekerja.
+      var m = window.location.pathname.match(/\/verifikasi\/([a-fA-F0-9]{32})\/?$/);
+      if (m) {
+          window.location.replace("/verifikasi/?token=" + m[1]);
+      }
+  })();
+  </script>
 </body>
 </html>
