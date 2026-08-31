@@ -2,12 +2,145 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tabel panjang: kepala kolom menempel supaya masih terbaca saat menggulir
-   1.778 baris. */
+/* ──────────────────────────────────────────────────────────────
+   Sistem visual diturunkan dari sertifikat KKN yang sudah tercetak:
+   batang biru #1074BA di kaki halaman, nomor bergaya birokrasi
+   (005/LPPM/KKN/UNFARI/VIII/2023), dan nilai yang selalu terdiri
+   tepat lima komponen H·S·L·QP·QL.
+
+   Tidak memakai pustaka komponen. Yang dibutuhkan cuma sedikit, dan
+   pustaka bawaan membuat setiap aplikasi tampak sama.
+   ────────────────────────────────────────────────────────────── */
+
+@layer base {
+    html {
+        /* Archivo punya sumbu lebar; judul memakai lebar melebar. */
+        font-variation-settings: "wdth" 100;
+    }
+
+    body {
+        @apply bg-latar text-tinta font-teks antialiased;
+    }
+
+    /* Fokus papan ketik harus selalu terlihat. Sistem ini dipakai dosen
+       yang mengisi nilai berderet-deret dengan Tab. */
+    :focus-visible {
+        outline: 2px solid theme("colors.biru.DEFAULT");
+        outline-offset: 2px;
+        border-radius: 2px;
+    }
+}
+
 @layer components {
-    .tabel-lengket thead th {
-        position: sticky;
-        top: 0;
-        z-index: 1;
+    /* Garis biru tipis di paling atas setiap halaman — kutipan langsung
+       dari batang di kaki sertifikat. Satu-satunya hiasan yang dipakai,
+       dan ia menautkan layar ke dokumen yang dihasilkannya. */
+    .pita-atas {
+        @apply fixed inset-x-0 top-0 h-[3px] bg-biru z-50;
+    }
+
+    .judul-halaman {
+        @apply font-judul font-bold tracking-[-0.01em];
+        font-variation-settings: "wdth" 112;
+    }
+
+    .eyebrow {
+        @apply font-data text-mikro uppercase text-tinta-samar;
+    }
+
+    /* ── kendali ── */
+    .medan {
+        @apply w-full bg-kertas border border-garis rounded-md px-3 py-2
+               text-sm placeholder:text-tinta-samar
+               focus:border-biru focus:ring-0;
+    }
+
+    .tombol {
+        @apply inline-flex items-center justify-center gap-2 rounded-md
+               px-4 py-2 text-sm font-medium transition-colors
+               disabled:opacity-40 disabled:pointer-events-none;
+    }
+    .tombol-utama {
+        @apply tombol bg-biru text-kertas hover:bg-biru-dalam;
+    }
+    .tombol-halus {
+        @apply tombol border border-garis bg-kertas text-tinta hover:border-biru hover:text-biru;
+    }
+
+    /* Segmen tahun ajaran. Tahun ajarannya cuma LIMA — menyembunyikannya
+       di dalam dropdown menyamarkan sesuatu yang kecil dan selesai. */
+    .segmen {
+        @apply inline-flex rounded-md border border-garis bg-kertas p-0.5;
+    }
+    .segmen > button {
+        @apply font-data text-xs px-2.5 py-1.5 rounded text-tinta-redup
+               transition-colors whitespace-nowrap;
+    }
+    .segmen > button[aria-pressed="true"] {
+        @apply bg-biru text-kertas;
+    }
+    .segmen > button:not([aria-pressed="true"]):hover {
+        @apply text-biru bg-biru-muda;
+    }
+
+    /* ── register ── */
+    .register {
+        @apply w-full border-collapse text-sm;
+    }
+    /* Kepala tabel duduk di atas `latar`, bukan kartu putih — jadi ia
+       memakai `redup` (5,86) bukan `samar` (4,34). */
+    .register thead th {
+        @apply sticky top-0 z-10 bg-latar text-left font-data text-mikro uppercase
+               text-tinta-redup px-3 py-2.5 border-b border-garis whitespace-nowrap;
+    }
+    .register tbody td {
+        @apply px-3 py-2 border-b border-garis-tipis align-middle;
+    }
+    .register tbody tr:hover td {
+        @apply bg-biru-muda/40;
+    }
+    .kode {
+        @apply font-data text-xs text-tinta-redup;
+    }
+
+    /* ── penanda status ── */
+    .tanda {
+        @apply inline-flex items-center rounded px-1.5 py-0.5 font-data text-mikro uppercase;
+    }
+    .tanda.is-sah { @apply bg-sah-muda text-sah; }
+    .tanda.is-belum { @apply bg-belum-muda text-belum; }
+    .tanda.is-kosong { @apply text-tinta-samar; }
+
+    /* ── TANDA TANGAN DESAIN: deret lima batang nilai ──
+       Nilai KKN selalu terdiri tepat lima komponen — H, S, L, QP, QL.
+       Tingginya sebanding dengan skornya, jadi satu pandangan menjawab
+       pertanyaan yang sebenarnya dihadapi dosen di akhir semester:
+       siapa yang belum lengkap dinilai, dan bagaimana sebarannya.
+       346 keikutsertaan tercatat tanpa satu pun komponen terisi. */
+    .deret-nilai {
+        @apply inline-flex items-end gap-[3px] h-5;
+    }
+    .deret-nilai i {
+        @apply block w-[4px] rounded-[1px] bg-biru;
+        min-height: 2px;
+    }
+    .deret-nilai i[data-kosong="1"] {
+        @apply bg-garis;
+        height: 2px !important;
+    }
+
+    .huruf-mutu {
+        @apply font-data font-medium text-sm tabular-nums;
+    }
+}
+
+/* Gerak dihormati. Satu-satunya animasi adalah batang nilai yang tumbuh
+   saat baris muncul; kalau pengguna memintanya berhenti, ia berhenti. */
+@media (prefers-reduced-motion: no-preference) {
+    .deret-nilai i {
+        animation: tumbuh 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    @keyframes tumbuh {
+        from { height: 2px; }
     }
 }

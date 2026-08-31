@@ -1,44 +1,48 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="unfari">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Verifikasi Sertifikat — KKN LPPM UNFARI</title>
-  <meta name="description" content="Verifikasi keaslian sertifikat KKN Universitas Al-Ghifari">
+  <title>Verifikasi Sertifikat — KKN LPPM Universitas Al-Ghifari</title>
+  <meta name="description" content="Memeriksa keaslian sertifikat KKN Universitas Al-Ghifari">
   <meta name="robots" content="noindex">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/app.css">
 </head>
-<body class="bg-base-200 font-sans">
+<body>
 
-<div class="min-h-screen flex items-center justify-center p-4">
-  <div class="card w-full max-w-lg bg-base-100 shadow-xl">
-    <div class="card-body">
+<div class="pita-atas" aria-hidden="true"></div>
 
-      <div class="text-center mb-4">
-        <h1 class="text-lg font-bold text-primary">Verifikasi Sertifikat KKN</h1>
-        <p class="text-sm text-base-content/60">Lembaga Penelitian dan Pengabdian kepada Masyarakat</p>
-        <p class="text-sm text-base-content/60">Universitas Al-Ghifari</p>
-      </div>
+<main class="min-h-screen flex items-center justify-center p-5">
+  <!-- Kartu ini sengaja berbentuk lanskap seperti sertifikatnya sendiri,
+       dengan batang biru di kaki — kutipan langsung dari dokumen yang
+       sedang diperiksa. -->
+  <article class="w-full max-w-2xl bg-kertas rounded-lg shadow-kartu overflow-hidden">
 
-      <div id="memuat" class="text-center py-8">
-        <span class="loading loading-spinner loading-lg text-primary"></span>
-      </div>
-
-      <div id="hasil" class="hidden">
-        <div id="lencana" class="rounded-lg p-4 text-center mb-4"></div>
-        <dl id="rincian" class="text-sm"></dl>
-      </div>
-
-      <p class="text-xs text-base-content/40 text-center mt-6">
-        Halaman ini menampilkan data yang tercetak pada sertifikat.
-        Nilai tidak ditampilkan.
-      </p>
+    <div class="px-8 pt-8 pb-2 text-center border-b border-garis-tipis">
+      <div class="eyebrow">Lembaga Penelitian dan Pengabdian kepada Masyarakat</div>
+      <h1 class="judul-halaman text-2xl mt-1">Universitas Al-Ghifari</h1>
+      <p class="text-sm text-tinta-redup mt-1 mb-6">Verifikasi sertifikat Kuliah Kerja Nyata</p>
     </div>
-  </div>
-</div>
+
+    <div id="memuat" class="px-8 py-16 text-center font-data text-xs text-tinta-samar">
+      MEMERIKSA…
+    </div>
+
+    <div id="hasil" hidden>
+      <div id="lencana" class="px-8 py-5 text-center"></div>
+      <dl id="rincian" class="px-8 pb-8 grid sm:grid-cols-2 gap-x-8"></dl>
+    </div>
+
+    <p class="px-8 pb-6 text-xs text-tinta-samar text-center">
+      Halaman ini hanya menampilkan keterangan yang tercetak pada sertifikat.
+    </p>
+
+    <div class="h-2 bg-biru" aria-hidden="true"></div>
+  </article>
+</main>
 
 <script src="/assets/js/config.js"></script>
 <script src="/assets/js/auth.js"></script>
@@ -47,17 +51,17 @@
 <script>
 (function () {
     "use strict";
-    // Halaman ini sengaja TANPA penjaga login. Siapa pun yang memegang
-    // sertifikat harus bisa memverifikasinya — itu gunanya QR di sana.
+    // Sengaja TANPA penjaga login. Siapa pun yang memegang sertifikat harus
+    // bisa memverifikasinya — itu gunanya QR di sana.
 
     const memuat = document.getElementById("memuat");
     const hasil = document.getElementById("hasil");
     const lencana = document.getElementById("lencana");
     const rincian = document.getElementById("rincian");
 
-    // Token bisa datang dari jalur (/verifikasi/<token>) atau kueri
-    // (?token=). GitHub Pages menyajikan situs statis, jadi jalur bersarang
-    // hanya bekerja lewat 404.html yang mengalihkan; kueri selalu bekerja.
+    // Token bisa datang dari jalur (/verifikasi/<token>) atau kueri.
+    // QR pada 140+ sertifikat yang sudah tercetak memakai bentuk jalur dan
+    // TIDAK BISA diubah; 404.html yang mengalihkannya ke sini.
     function bacaToken() {
         const q = new URLSearchParams(window.location.search).get("token");
         if (q) return q.trim();
@@ -66,42 +70,39 @@
         return akhir && akhir !== "verifikasi" ? akhir.trim() : "";
     }
 
-    function baris(label, nilai) {
+    function baris(label, nilai, mono) {
         if (!nilai) return;
-        const dt = document.createElement("dt");
-        dt.className = "text-base-content/50 text-xs uppercase tracking-wide mt-3";
-        dt.textContent = label;
-        const dd = document.createElement("dd");
-        dd.className = "font-medium";
-        // textContent, tidak pernah innerHTML — nama mahasiswa adalah
-        // masukan pengguna dan halaman ini terbuka untuk umum.
+        const dt = UI.el("dt", "eyebrow mt-4", label);
+        const dd = UI.el("dd", (mono ? "font-data text-sm " : "font-medium ") + "mt-0.5");
+        // textContent, tidak pernah innerHTML — nama mahasiswa adalah masukan
+        // pengguna, dan halaman ini terbuka untuk umum.
         dd.textContent = nilai;
         rincian.appendChild(dt);
         rincian.appendChild(dd);
     }
 
     function tampilkan(d) {
-        memuat.classList.add("hidden");
-        hasil.classList.remove("hidden");
+        memuat.hidden = true;
+        hasil.hidden = false;
 
         if (!d || !d.sah) {
-            lencana.className = "rounded-lg p-4 text-center mb-4 bg-error/10 text-error";
-            lencana.textContent = "SERTIFIKAT TIDAK DITEMUKAN";
-            const p = document.createElement("p");
-            p.className = "text-sm text-base-content/60 text-center";
-            p.textContent = "Token pada QR tidak dikenali. Pastikan QR terpindai utuh.";
-            rincian.appendChild(p);
+            lencana.className = "px-8 py-5 text-center bg-galat-muda";
+            const t = UI.el("div", "judul-halaman text-lg text-galat", "Sertifikat tidak ditemukan");
+            const s = UI.el("p", "text-sm text-tinta-redup mt-1",
+                "Token pada QR tidak dikenali. Pastikan seluruh kode QR terpindai.");
+            lencana.appendChild(t);
+            lencana.appendChild(s);
             return;
         }
 
-        lencana.className = "rounded-lg p-4 text-center mb-4 bg-success/10 text-success font-semibold";
-        lencana.textContent = "SERTIFIKAT SAH";
+        lencana.className = "px-8 py-5 text-center bg-sah-muda";
+        lencana.appendChild(UI.el("div", "judul-halaman text-lg text-sah", "Sertifikat sah"));
 
         baris("Nama", d.nama);
-        baris("NIM", d.nim);
+        baris("NIM", d.nim, true);
         baris("Program studi", d.prodi);
-        baris("Nomor sertifikat", d.no_sertifikat);
-        baris("Tahun akademik", d.tahun_ajaran);
+        baris("Tahun akademik", d.tahun_ajaran, true);
+        baris("Nomor sertifikat", d.no_sertifikat, true);
         baris("Tanggal terbit", d.tanggal);
     }
 

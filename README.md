@@ -17,6 +17,45 @@ di `kknlppm.unfari.ac.id` tidak disentuh.
 Backend harus hidup lebih dulu di `http://localhost:8090` — lihat
 `../kkn-gocroot/uji/README.md`.
 
+## Sistem visual
+
+Diturunkan dari sertifikat KKN yang sudah tercetak, bukan dari pustaka
+komponen. Tidak memakai DaisyUI atau sejenisnya — yang dibutuhkan cuma
+sedikit, dan pustaka bawaan membuat setiap aplikasi tampak sama.
+
+| | |
+|---|---|
+| Warna | `#1074BA` diambil dari batang biru di kaki sertifikat. Dasar halaman kertas dingin bersemu biru, bukan krem. |
+| Huruf | **Archivo** dipakai untuk dua peran lewat sumbu LEBARNYA — melebar untuk judul, normal untuk teks. **Azeret Mono** untuk NIM, nomor sertifikat, tahun ajaran, dan nilai: semuanya kode berformat tetap di dunia nyata. |
+| Tanda tangan | **Deret lima batang nilai.** Nilai KKN selalu terdiri tepat lima komponen H·S·L·QP·QL; tingginya sebanding dengan skor. |
+| Hiasan | Satu garis biru 3px di puncak halaman — kutipan dari kaki sertifikat. Tidak ada yang lain. |
+
+### Kenapa deret lima batang
+
+Ia menjawab pertanyaan yang benar-benar dihadapi dosen di akhir semester:
+**siapa yang belum lengkap dinilai.** 346 keikutsertaan tercatat tanpa satu
+pun komponen terisi, dan pada daftar 1.778 baris itu tidak terlihat tanpa
+membuka satu per satu.
+
+Skalanya dipetakan dari **45**, bukan dari 0. Hampir seluruh nilai jatuh di
+rentang 75-95; pada skala 0-100 kelima batangnya tampak sama tinggi dan
+deretnya berubah jadi hiasan.
+
+### Warna teks diukur, bukan dikira
+
+Nilai pertama yang saya pakai (`#9AAAB9`) menghasilkan kontras **2,38**
+terhadap putih — jauh di bawah ambang 4,5 untuk teks kecil, dan eyebrow di
+sini berukuran 11px. Palet sekarang diukur:
+
+    tinta        17,4 di kartu · 15,0 di latar
+    tinta-redup   6,8 di kartu ·  5,9 di latar
+    tinta-samar   5,0 di kartu ·  4,3 di latar   -> hanya dipakai di atas kartu
+    biru          5,0 di kartu ·  4,3 di latar
+
+`uji/uji-mutu.mjs` mengukur kontras TERBURUK di seluruh register setiap kali
+dijalankan, terhadap latar belakang elemen yang sebenarnya — bukan terhadap
+body, yang memberi angka salah untuk sel yang duduk di atas kartu putih.
+
 ## Aturan yang tidak boleh dilanggar
 
 Token PASETO disimpan di `localStorage`, bukan cookie HttpOnly — cookie tidak

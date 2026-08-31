@@ -33,6 +33,9 @@ async function masuk(uname) {
 
   const ringkas = await page.textContent('#ringkasan');
   uji('ringkasan menampilkan 1.778 peserta', /1\.778/.test(ringkas), ringkas);
+  // Judul halaman harus menyebut sistemnya, bukan sekadar "Dashboard".
+  uji('judul halaman menyebut Register KKN',
+      (await page.textContent('h1, .judul-halaman')).includes('Register KKN'));
 
   const baris = await page.locator('#isiTabel tr').count();
   uji('tabel terisi 50 baris', baris === 50, String(baris));
@@ -46,11 +49,32 @@ async function masuk(uname) {
   const posisi2 = await page.textContent('#posisiHalaman');
   uji('tombol berikutnya bekerja', /Halaman 2 /.test(posisi2), posisi2.trim());
 
-  // Saringan tahun ajaran
-  await page.selectOption('#tahunAjaran', '2025-2026');
+  // Saringan tahun ajaran. Tahun ajarannya cuma lima, jadi ditampilkan
+  // sebagai segmen — bukan disembunyikan di dalam dropdown.
+  await page.click('#segmenTahun button[data-nilai="2025-2026"]');
   await page.waitForTimeout(1500);
   const ringkas2 = await page.textContent('#ringkasan');
   uji('saringan tahun 2025-2026 -> 397', /^397/.test(ringkas2), ringkas2);
+  uji('segmen terpilih ditandai aria-pressed', 'true' ===
+      await page.getAttribute('#segmenTahun button[data-nilai="2025-2026"]', 'aria-pressed'));
+
+  // Deret lima batang nilai — elemen tanda tangan halaman ini.
+  const deret = await page.evaluate(() => {
+    const d = document.querySelectorAll('#isiTabel .deret-nilai');
+    if (!d.length) return null;
+    const pertama = d[0].querySelectorAll('i');
+    return {
+      jumlahDeret: d.length,
+      batangPerDeret: pertama.length,
+      // Baris tanpa nilai harus menunjukkan lima batang KOSONG, bukan hilang.
+      adaKosong: [...d].some(x => x.querySelectorAll('i[data-kosong="1"]').length === 5),
+      adaTerisi: [...d].some(x => x.querySelectorAll('i:not([data-kosong])').length === 5),
+    };
+  });
+  uji('setiap baris punya deret nilai', deret && deret.jumlahDeret > 0, String(deret && deret.jumlahDeret));
+  uji('deretnya tepat lima batang', deret && deret.batangPerDeret === 5, String(deret && deret.batangPerDeret));
+  uji('yang belum dinilai tampak kosong', !!(deret && deret.adaKosong));
+  uji('yang sudah dinilai tampak terisi', !!(deret && deret.adaTerisi));
 
   uji('tidak ada galat JavaScript', galat.length === 0, galat.join(' | '));
   await ctx.close();

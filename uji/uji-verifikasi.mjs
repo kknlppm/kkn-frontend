@@ -11,7 +11,7 @@ const uji = (n, ok, k='') => { hasil.push([n, ok, k]); if (!ok) gagal++; };
 await p.goto(FE + '/verifikasi/?token=' + TOK, { waitUntil: 'networkidle' });
 await p.waitForTimeout(900);
 let teks = await p.textContent('body');
-uji('token sah -> SERTIFIKAT SAH', teks.includes('SERTIFIKAT SAH'));
+uji('token sah -> Sertifikat sah', /Sertifikat sah/i.test(teks));
 uji('menampilkan nama', /Nama/.test(teks));
 uji('menampilkan nomor sertifikat', /Nomor sertifikat/.test(teks));
 // Diperiksa pada DAFTAR RINCIAN, bukan seluruh halaman — footer halaman ini
@@ -33,12 +33,12 @@ await p.screenshot({ path: '/tmp/kkn-verifikasi.png' });
 await p.goto(FE + '/verifikasi/?token=00000000000000000000000000000000', { waitUntil: 'networkidle' });
 await p.waitForTimeout(900);
 teks = await p.textContent('body');
-uji('token palsu -> TIDAK DITEMUKAN', teks.includes('TIDAK DITEMUKAN'));
+uji('token palsu -> tidak ditemukan', /tidak ditemukan/i.test(teks));
 
 await p.goto(FE + '/verifikasi/', { waitUntil: 'networkidle' });
 await p.waitForTimeout(600);
 teks = await p.textContent('body');
-uji('tanpa token -> TIDAK DITEMUKAN', teks.includes('TIDAK DITEMUKAN'));
+uji('tanpa token -> tidak ditemukan', /tidak ditemukan/i.test(teks));
 
 // Halaman ini harus bekerja TANPA sesi sama sekali.
 const ls = await p.evaluate(() => { try { return Object.keys(localStorage).length } catch(e){ return -1 } });

@@ -1,78 +1,78 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="unfari">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Data KKN — KKN LPPM UNFARI</title>
+  <title>Register KKN — LPPM Universitas Al-Ghifari</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/app.css">
 </head>
-<body class="bg-base-200 font-sans min-h-screen">
+<body>
 
-<div class="navbar bg-base-100 shadow-sm sticky top-0 z-10">
-  <div class="flex-1 px-4">
-    <span class="text-lg font-bold text-primary">KKN LPPM</span>
-    <span class="text-sm text-base-content/50 ml-2 hidden sm:inline">Universitas Al-Ghifari</span>
-  </div>
-  <div class="flex-none px-4 flex items-center gap-3">
-    <div class="text-right hidden sm:block">
-      <div id="namaPengguna" class="text-sm font-medium"></div>
-      <div id="peranPengguna" class="text-xs text-base-content/50"></div>
-    </div>
-    <button id="tombolKeluar" class="btn btn-ghost btn-sm">Keluar</button>
-  </div>
-</div>
+<div class="pita-atas" aria-hidden="true"></div>
 
-<main class="p-4 max-w-7xl mx-auto">
-
-  <div class="flex flex-wrap items-end gap-3 mb-4">
-    <div class="form-control">
-      <label class="label pb-1" for="tahunAjaran"><span class="label-text text-xs">Tahun ajaran</span></label>
-      <select id="tahunAjaran" class="select select-bordered select-sm w-44">
-        <option value="">Semua tahun</option>
-      </select>
+<header class="bg-kertas border-b border-garis">
+  <div class="max-w-[1400px] mx-auto px-5 h-16 flex items-center justify-between gap-4">
+    <div class="min-w-0">
+      <div class="judul-halaman text-lg leading-tight">Register KKN</div>
+      <div class="eyebrow">LPPM · Universitas Al-Ghifari</div>
     </div>
-    <div class="form-control flex-1 min-w-[12rem]">
-      <label class="label pb-1" for="cari"><span class="label-text text-xs">Cari</span></label>
-      <input id="cari" type="search" class="input input-bordered input-sm w-full"
-             placeholder="NIM, nama, atau judul KKN" spellcheck="false">
-    </div>
-    <div class="text-sm text-base-content/60 pb-1">
-      <span id="ringkasan">memuat…</span>
+    <div class="flex items-center gap-4 shrink-0">
+      <div class="text-right hidden sm:block">
+        <div id="namaPengguna" class="text-sm font-medium leading-tight"></div>
+        <div id="peranPengguna" class="eyebrow"></div>
+      </div>
+      <button id="tombolKeluar" class="tombol-halus">Keluar</button>
     </div>
   </div>
+</header>
 
-  <div id="pesan" class="hidden" role="alert"></div>
+<main class="max-w-[1400px] mx-auto px-5 py-5">
 
-  <div class="bg-base-100 rounded-lg shadow-sm overflow-hidden">
-    <div class="overflow-x-auto max-h-[70vh]">
-      <table class="table table-sm table-zebra tabel-lengket">
-        <thead class="bg-base-200">
+  <!-- Papan perintah. Tahun ajarannya cuma lima, jadi kelimanya ditampilkan
+       — menyembunyikannya di dropdown menyamarkan sesuatu yang kecil. -->
+  <div class="flex flex-wrap items-center gap-3 mb-4">
+    <div id="segmenTahun" class="segmen" role="group" aria-label="Tahun ajaran"></div>
+
+    <div class="flex-1 min-w-[14rem]">
+      <label for="cari" class="sr-only">Cari peserta</label>
+      <input id="cari" type="search" class="medan" spellcheck="false"
+             placeholder="NIM, nama, atau judul KKN">
+    </div>
+
+    <output id="ringkasan" class="font-data text-xs text-tinta-redup whitespace-nowrap"></output>
+  </div>
+
+  <div id="pesan" hidden role="alert"></div>
+
+  <div class="bg-kertas rounded-lg shadow-kartu overflow-hidden">
+    <div class="overflow-auto max-h-[calc(100vh-14rem)]">
+      <table class="register">
+        <thead>
           <tr>
             <th>NIM</th>
             <th>Nama</th>
-            <th>Program studi</th>
+            <th class="hidden lg:table-cell">Program studi</th>
             <th>Kelompok</th>
-            <th>TA</th>
-            <th>Judul KKN</th>
+            <th class="hidden md:table-cell">TA</th>
+            <th class="hidden xl:table-cell">Judul KKN</th>
+            <th><span class="text-tinta-redup">H·S·L·QP·QL</span></th>
             <th class="text-right">Nilai</th>
             <th>Sertifikat</th>
           </tr>
         </thead>
-        <tbody id="isiTabel">
-          <tr><td colspan="8" class="text-center py-8 text-base-content/50">Memuat…</td></tr>
-        </tbody>
+        <tbody id="isiTabel"></tbody>
       </table>
     </div>
   </div>
 
-  <div class="flex items-center justify-between mt-4 gap-3">
-    <button id="sebelumnya" class="btn btn-sm" disabled>← Sebelumnya</button>
-    <span id="posisiHalaman" class="text-sm text-base-content/60"></span>
-    <button id="berikutnya" class="btn btn-sm" disabled>Berikutnya →</button>
-  </div>
+  <nav class="flex items-center justify-between gap-3 mt-4" aria-label="Halaman">
+    <button id="sebelumnya" class="tombol-halus" disabled>← Sebelumnya</button>
+    <span id="posisiHalaman" class="font-data text-xs text-tinta-redup"></span>
+    <button id="berikutnya" class="tombol-halus" disabled>Berikutnya →</button>
+  </nav>
 </main>
 
 <script src="/assets/js/config.js"></script>
@@ -88,60 +88,61 @@
     const pesan = document.getElementById("pesan");
     const ringkasan = document.getElementById("ringkasan");
     const posisi = document.getElementById("posisiHalaman");
-    const selTahun = document.getElementById("tahunAjaran");
+    const segmen = document.getElementById("segmenTahun");
     const inpCari = document.getElementById("cari");
     const btnPrev = document.getElementById("sebelumnya");
     const btnNext = document.getElementById("berikutnya");
+    const KOLOM = 9;
 
-    let halaman = 1;
-    let totalHalaman = 1;
+    let halaman = 1, totalHalaman = 1, tahun = "";
 
     const pengguna = Auth.getUser() || {};
     document.getElementById("namaPengguna").textContent = pengguna.name || "";
     document.getElementById("peranPengguna").textContent = pengguna.role_name || "";
+    document.getElementById("tombolKeluar").addEventListener("click", function () { Auth.logout(); });
 
-    document.getElementById("tombolKeluar").addEventListener("click", function () {
-        Auth.logout();
-    });
-
-    function statusBayar(kode) {
-        // Dipetakan dari daftar tertutup; nilai tak dikenal jatuh ke "—".
-        if (kode === 1) return ["Lunas", "success"];
-        if (kode === 2) return ["Sebagian", "warning"];
-        return ["Belum", "ghost"];
-    }
-
-    function gambarBaris(r) {
-        const tr = document.createElement("tr");
-        tr.appendChild(UI.sel(r.nim, "font-mono text-xs"));
-
-        // Nama bisa memuat karakter apa pun — selalu textContent, tidak pernah
-        // innerHTML. Lihat catatan di assets/js/auth.js.
-        const tdNama = UI.sel(r.name, "font-medium");
-        if (r.ketua) {
-            tdNama.appendChild(document.createTextNode(" "));
-            tdNama.appendChild(UI.lencana("ketua", "warning"));
-        }
-        tr.appendChild(tdNama);
-
-        tr.appendChild(UI.sel(r.prodi, "text-xs"));
-        tr.appendChild(UI.sel(r.kelompok, "text-xs"));
-        tr.appendChild(UI.sel(r.tahun_ajaran, "text-xs whitespace-nowrap"));
-        tr.appendChild(UI.sel(r.judul_kkn, "text-xs max-w-xs truncate"));
-        tr.appendChild(UI.sel(r.nilai || "—", "text-right font-mono"));
-        tr.appendChild(r.has_cert
-            ? UI.selLencana("terbit", "success")
-            : UI.selLencana("belum", "ghost"));
+    function barisPesan(teks) {
+        const tr = UI.el("tr");
+        const td = UI.el("td", "text-center py-12 text-tinta-samar text-sm", teks);
+        td.colSpan = KOLOM;
+        tr.appendChild(td);
         return tr;
     }
 
-    function barisPesan(teks) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 8;
-        td.className = "text-center py-8 text-base-content/50";
-        td.textContent = teks;
-        tr.appendChild(td);
+    function gambarBaris(r) {
+        const tr = UI.el("tr");
+        tr.appendChild(UI.sel(r.nim, "kode whitespace-nowrap"));
+
+        const tdNama = UI.sel(r.name, "font-medium");
+        if (r.ketua) {
+            const k = UI.el("span", "tanda is-belum ml-1.5", "ketua");
+            tdNama.appendChild(k);
+        }
+        tr.appendChild(tdNama);
+
+        tr.appendChild(UI.sel(r.prodi, "text-xs text-tinta-redup hidden lg:table-cell"));
+        // Sebagian data menuliskan "Kelompok 22", sebagian hanya "33".
+        // Kolomnya sudah berjudul Kelompok; awalannya dibuang supaya
+        // katanya tidak terbaca dua kali.
+        tr.appendChild(UI.sel(String(r.kelompok || "").replace(/^kelompok\s+/i, ""), "kode"));
+        tr.appendChild(UI.sel(r.tahun_ajaran, "kode whitespace-nowrap hidden md:table-cell"));
+
+        const tdJudul = UI.sel(r.judul_kkn, "text-xs text-tinta-redup hidden xl:table-cell max-w-[22rem] truncate");
+        tdJudul.title = r.judul_kkn || "";
+        tr.appendChild(tdJudul);
+
+        tr.appendChild(UI.deretNilai(r));
+
+        const tdNilai = UI.el("td", "text-right whitespace-nowrap");
+        if (r.nilai > 0) {
+            tdNilai.appendChild(UI.el("span", "huruf-nilai font-data text-sm tabular-nums", r.nilai));
+            tdNilai.appendChild(UI.el("span", "huruf-mutu text-biru ml-1.5", r.huruf || ""));
+        } else {
+            tdNilai.appendChild(UI.el("span", "text-tinta-samar", "—"));
+        }
+        tr.appendChild(tdNilai);
+
+        tr.appendChild(r.has_cert ? UI.tanda("terbit", "sah") : UI.tanda("belum", "kosong"));
         return tr;
     }
 
@@ -151,17 +152,17 @@
         isi.appendChild(barisPesan("Memuat…"));
 
         const p = new URLSearchParams({ page: String(halaman), limit: "50" });
-        if (selTahun.value) p.set("tahun_ajaran", selTahun.value);
+        if (tahun) p.set("tahun_ajaran", tahun);
         if (inpCari.value.trim()) p.set("q", inpCari.value.trim());
 
         try {
             const res = await Api.get("/api/participations?" + p.toString());
-            if (!res) return; // 401 sudah ditangani api.js
+            if (!res) return;
 
             UI.kosongkan(isi);
             const baris = res.data || [];
-            if (baris.length === 0) {
-                isi.appendChild(barisPesan("Tidak ada data yang cocok."));
+            if (!baris.length) {
+                isi.appendChild(barisPesan("Tidak ada peserta yang cocok."));
             } else {
                 baris.forEach(function (r) { isi.appendChild(gambarBaris(r)); });
             }
@@ -175,28 +176,40 @@
         } catch (err) {
             UI.kosongkan(isi);
             isi.appendChild(barisPesan("Gagal memuat."));
-            UI.pesan(pesan, err.message || "Gagal memuat data.", "error");
+            UI.pesan(pesan, err.message || "Gagal memuat data.", "galat");
         }
     }
 
+    function tombolTahun(nilai, label) {
+        const b = UI.el("button", "", label);
+        b.type = "button";
+        b.setAttribute("aria-pressed", String(tahun === nilai));
+        b.addEventListener("click", function () {
+            tahun = nilai;
+            halaman = 1;
+            segmen.querySelectorAll("button").forEach(function (x) {
+                x.setAttribute("aria-pressed", String(x.dataset.nilai === nilai));
+            });
+            muat();
+        });
+        b.dataset.nilai = nilai;
+        return b;
+    }
+
     async function muatTahun() {
+        segmen.appendChild(tombolTahun("", "Semua"));
         try {
             const res = await Api.get("/api/academic-years");
             if (!res) return;
             (res.data || []).forEach(function (ta) {
-                const o = document.createElement("option");
-                o.value = ta;
-                o.textContent = ta;
-                selTahun.appendChild(o);
+                segmen.appendChild(tombolTahun(ta, ta));
             });
-        } catch (e) { /* saringan opsional; daftarnya tetap bisa dibuka */ }
+        } catch (e) { /* saringan opsional; register tetap terbuka */ }
     }
 
-    selTahun.addEventListener("change", function () { halaman = 1; muat(); });
     btnPrev.addEventListener("click", function () { if (halaman > 1) { halaman--; muat(); } });
     btnNext.addEventListener("click", function () { if (halaman < totalHalaman) { halaman++; muat(); } });
 
-    // Pencarian ditunda supaya tiap ketukan tidak jadi satu permintaan.
     let jeda;
     inpCari.addEventListener("input", function () {
         clearTimeout(jeda);
