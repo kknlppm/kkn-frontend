@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pengaturan — LPPM Universitas Al-Ghifari</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+
+<main class="max-w-[1060px] mx-auto px-5 py-5">
+
+  <div id="pesan" hidden role="alert"></div>
+
+  <form id="formPengaturan" novalidate class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] items-start">
+
+    <div class="grid gap-5">
+
+      <!-- Teks yang benar-benar tercetak di sertifikat. Dulu ketiganya
+           tertulis keras di templat; sejak 1 September 2026 diisi admin. -->
+      <section class="bg-kertas rounded-lg shadow-kartu p-5">
+        <h2 class="judul-halaman text-base mb-1">Teks sertifikat</h2>
+        <p class="text-xs text-tinta-redup mb-4">
+          Tercetak di setiap sertifikat yang diterbitkan. Judul/tema sama untuk semua peserta.
+        </p>
+
+        <div class="grid gap-4">
+          <div>
+            <label for="NAMA_KEGIATAN" class="block text-sm font-medium mb-1">Nama kegiatan</label>
+            <input id="NAMA_KEGIATAN" name="NAMA_KEGIATAN" class="medan" type="text" required
+                   placeholder="Kuliah Kerja Nyata (KKN) Tematik Universitas Al-Ghifari">
+          </div>
+
+          <div>
+            <div class="flex items-baseline justify-between gap-3 mb-1">
+              <label for="JUDUL_KKN" class="text-sm font-medium">Judul / tema KKN</label>
+              <output id="hitungJudul" for="JUDUL_KKN"
+                      class="font-data text-xs text-tinta-redup tabular-nums">0 / 180</output>
+            </div>
+            <textarea id="JUDUL_KKN" name="JUDUL_KKN" class="medan" rows="2" required
+                      maxlength="180" placeholder="Membangun Desa Mandiri dan Berdaya Saing"></textarea>
+            <p class="text-xs text-tinta-redup mt-1">
+              Maksimal 180 karakter. Lebih dari itu mendorong isi sertifikat ke halaman kedua.
+            </p>
+          </div>
+
+          <div class="max-w-xs">
+            <label for="KOTA" class="block text-sm font-medium mb-1">Kota penerbitan</label>
+            <input id="KOTA" name="KOTA" class="medan" type="text" required placeholder="BANDUNG">
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-kertas rounded-lg shadow-kartu p-5">
+        <h2 class="judul-halaman text-base mb-4">Periode</h2>
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label for="TA" class="block text-sm font-medium mb-1">Tahun akademik</label>
+            <input id="TA" name="TA" class="medan font-data" type="text" required placeholder="2025-2026">
+          </div>
+          <div>
+            <label for="KKN_START" class="block text-sm font-medium mb-1">Mulai</label>
+            <input id="KKN_START" name="KKN_START" class="medan font-data" type="date">
+          </div>
+          <div>
+            <label for="KKN_END" class="block text-sm font-medium mb-1">Selesai</label>
+            <input id="KKN_END" name="KKN_END" class="medan font-data" type="date">
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-kertas rounded-lg shadow-kartu p-5">
+        <h2 class="judul-halaman text-base mb-4">Penanda tangan</h2>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="NAMA_REKTOR" class="block text-sm font-medium mb-1">Nama Rektor</label>
+            <input id="NAMA_REKTOR" name="NAMA_REKTOR" class="medan" type="text" required>
+          </div>
+          <div>
+            <label for="NIK_NIP_REKTOR" class="block text-sm font-medium mb-1">NIK / NIP Rektor</label>
+            <input id="NIK_NIP_REKTOR" name="NIK_NIP_REKTOR" class="medan font-data" type="text" required>
+          </div>
+          <div>
+            <label for="NAMA_LPPM" class="block text-sm font-medium mb-1">Nama Ketua LPPM</label>
+            <input id="NAMA_LPPM" name="NAMA_LPPM" class="medan" type="text" required>
+          </div>
+          <div>
+            <label for="NIK_NIP_LPPM" class="block text-sm font-medium mb-1">NIK / NIP Ketua LPPM</label>
+            <input id="NIK_NIP_LPPM" name="NIK_NIP_LPPM" class="medan font-data" type="text" required>
+          </div>
+        </div>
+        <p class="text-xs text-tinta-redup mt-4">
+          Berkas tanda tangan
+          <span id="berkasTtd" class="font-data"></span>
+          belum bisa diganti dari sini.
+        </p>
+      </section>
+
+      <div class="flex items-center gap-3">
+        <button id="tombolSimpan" type="submit" class="tombol-utama">Simpan pengaturan</button>
+        <output id="penanda" class="text-sm text-tinta-redup" aria-live="polite"></output>
+      </div>
+    </div>
+
+    <!-- Pratinjau. Ketiga teks di atas hanya terlihat salah setelah tercetak,
+         jadi bagian sertifikat yang memuatnya digambar di sini apa adanya. -->
+    <aside class="bg-kertas rounded-lg shadow-kartu p-5 lg:sticky lg:top-5">
+      <h2 class="eyebrow text-tinta-redup mb-3">Seperti tercetak</h2>
+      <div class="border border-garis rounded p-4 text-center leading-snug select-none">
+        <div class="text-[11px] text-tinta-samar mb-2">Diberikan kepada</div>
+        <div class="text-lg font-semibold mb-2">Nama Mahasiswa</div>
+        <div class="text-[11px] text-tinta-samar">Sebagai</div>
+        <div class="text-xs font-semibold">PESERTA</div>
+        <div id="pvKegiatan" class="text-xs font-semibold mt-1 break-words"></div>
+        <div id="pvTa" class="text-xs font-semibold"></div>
+        <div id="pvJudul" class="text-biru font-semibold my-3 break-words"></div>
+        <div id="pvPeriode" class="text-[11px] text-tinta-redup"></div>
+        <div id="pvKota" class="text-xs font-semibold mt-2"></div>
+      </div>
+      <p class="text-xs text-tinta-redup mt-3">
+        Perbandingan ukuran huruf mengikuti sertifikatnya, bukan tata letaknya.
+      </p>
+    </aside>
+  </form>
+</main>
+
+<script src="/assets/js/config.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/ui.js"></script>
+<script src="/assets/js/nav.js"></script>
+<script>
+(function () {
+    "use strict";
+    if (!Auth.requireLogin()) return;
+    Nav.pasang("Pengaturan", "Teks dan penanda tangan sertifikat");
+
+    const MAKS_JUDUL = 180;
+    const KUNCI = [
+        "NAMA_KEGIATAN", "JUDUL_KKN", "KOTA", "TA", "KKN_START", "KKN_END",
+        "NAMA_REKTOR", "NIK_NIP_REKTOR", "NAMA_LPPM", "NIK_NIP_LPPM",
+    ];
+
+    const form = document.getElementById("formPengaturan");
+    const pesan = document.getElementById("pesan");
+    const penanda = document.getElementById("penanda");
+    const hitung = document.getElementById("hitungJudul");
+    const tombol = document.getElementById("tombolSimpan");
+
+    function galat(teks) {
+        pesan.className = "mb-4 rounded border border-garis bg-kertas px-4 py-3 text-sm";
+        pesan.textContent = teks;
+        pesan.hidden = false;
+    }
+    function bersih() { pesan.hidden = true; pesan.textContent = ""; }
+
+    function medan(k) { return document.getElementById(k); }
+
+    function tanggalIndonesia(iso) {
+        if (!iso) return "";
+        const bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                       "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        const b = iso.split("-");
+        if (b.length !== 3) return iso;
+        const n = parseInt(b[1], 10);
+        if (!(n >= 1 && n <= 12)) return iso;
+        return parseInt(b[2], 10) + " " + bulan[n - 1] + " " + b[0];
+    }
+
+    function pratinjau() {
+        const judul = medan("JUDUL_KKN").value.trim();
+        const kota = medan("KOTA").value.trim();
+        const mulai = tanggalIndonesia(medan("KKN_START").value);
+        const selesai = tanggalIndonesia(medan("KKN_END").value);
+
+        document.getElementById("pvKegiatan").textContent = medan("NAMA_KEGIATAN").value.trim();
+        document.getElementById("pvTa").textContent =
+            medan("TA").value.trim() ? "Tahun Akademik " + medan("TA").value.trim() : "";
+        document.getElementById("pvJudul").textContent = judul || "— judul belum diisi —";
+        document.getElementById("pvPeriode").textContent =
+            (mulai || selesai) ? mulai + " s.d. " + selesai : "";
+        // Baris ini dicetak huruf besar semua di sertifikatnya. Tanggalnya
+        // hari ini — tanggal sungguhannya baru lahir saat sertifikat terbit.
+        const kini = new Date();
+        const hariIni = tanggalIndonesia(
+            kini.getFullYear() + "-" +
+            String(kini.getMonth() + 1).padStart(2, "0") + "-" +
+            String(kini.getDate()).padStart(2, "0"));
+        document.getElementById("pvKota").textContent =
+            kota ? (kota + ", " + hariIni).toUpperCase() : "";
+
+        const n = Array.from(judul).length;
+        hitung.textContent = n + " / " + MAKS_JUDUL;
+        hitung.classList.toggle("text-tinta", n > MAKS_JUDUL * 0.9);
+    }
+
+    async function muat() {
+        try {
+            const res = await Api.get("/api/settings");
+            if (!res) return;
+            const d = res.data || {};
+            KUNCI.forEach(function (k) {
+                const el = medan(k);
+                if (el) el.value = d[k] || "";
+            });
+            const ttd = [d.TTD_REKTOR, d.TTD_LPPM].filter(Boolean).join(" · ");
+            document.getElementById("berkasTtd").textContent = ttd || "(belum ada)";
+            pratinjau();
+        } catch (e) {
+            galat(e.status === 403
+                ? "Hanya admin yang bisa membuka Pengaturan."
+                : "Gagal memuat pengaturan: " + e.message);
+        }
+    }
+
+    form.addEventListener("input", pratinjau);
+
+    form.addEventListener("submit", async function (ev) {
+        ev.preventDefault();
+        bersih();
+
+        const kirim = {};
+        KUNCI.forEach(function (k) {
+            const el = medan(k);
+            if (el) kirim[k] = el.value.trim();
+        });
+
+        // Diperiksa di sini juga supaya orang tidak menunggu perjalanan ke
+        // server untuk kesalahan yang sudah terlihat. Yang menegakkan aturannya
+        // tetap backend.
+        if (Array.from(kirim.JUDUL_KKN).length > MAKS_JUDUL) {
+            galat("Judul/tema KKN maksimal " + MAKS_JUDUL + " karakter.");
+            return;
+        }
+
+        tombol.disabled = true;
+        penanda.textContent = "Menyimpan…";
+        try {
+            await Api.post("/api/settings", kirim);
+            penanda.textContent = "Tersimpan";
+            setTimeout(function () { penanda.textContent = ""; }, 2000);
+        } catch (e) {
+            penanda.textContent = "";
+            galat(e.message);
+        } finally {
+            tombol.disabled = false;
+        }
+    });
+
+    muat();
+})();
+</script>
+</body>
+</html>

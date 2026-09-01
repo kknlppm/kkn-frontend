@@ -16,6 +16,7 @@
         { url: "/penilaian/",  label: "Penilaian",  peran: [P.ADMIN, P.DOSEN] },
         { url: "/sertifikat/", label: "Sertifikat", peran: [P.ADMIN, P.VALIDASI_LPPM] },
         { url: "/data-induk/", label: "Data induk", peran: [P.ADMIN, P.ADMIN_FAKULTAS] },
+        { url: "/pengaturan/", label: "Pengaturan", peran: [P.ADMIN] },
     ];
 
     function pasang(judul, keterangan) {

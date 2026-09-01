@@ -31,6 +31,26 @@ async function masuk(ctx) {
   await ctx.close();
 }
 
+// ── Pengaturan di ponsel: dua kolom harus melipat ──
+{
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const p = await masuk(ctx);
+  await p.goto(FE + '/pengaturan/', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(1200);
+  const geser = await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+  uji('390px: pengaturan tidak menggeser mendatar', !geser);
+  // Pratinjau duduk di kolom kedua pada layar lebar; di ponsel ia harus
+  // turun ke bawah formulir, bukan berdesakan di sampingnya.
+  const menumpuk = await p.evaluate(() => {
+    const form = document.querySelector('#formPengaturan > div');
+    const sisi = document.querySelector('#formPengaturan > aside');
+    if (!form || !sisi) return false;
+    return sisi.getBoundingClientRect().top >= form.getBoundingClientRect().bottom - 1;
+  });
+  uji('390px: pratinjau turun ke bawah formulir', menumpuk);
+  await ctx.close();
+}
+
 // ── fokus papan ketik ──
 {
   const ctx = await b.newContext();

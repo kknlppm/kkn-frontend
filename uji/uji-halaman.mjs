@@ -30,7 +30,7 @@ const tautanNav = p => p.$$eval('nav[aria-label="Bagian"] a', a => a.map(x => x.
 // ── navigasi mengikuti peran ──
 {
   const harap = {
-    'uji.admin':    ['Register', 'Kelompok', 'Penilaian', 'Sertifikat', 'Data induk'],
+    'uji.admin':    ['Register', 'Kelompok', 'Penilaian', 'Sertifikat', 'Data induk', 'Pengaturan'],
     'uji.fakultas': ['Register', 'Kelompok', 'Data induk'],
     'uji.dosen':    ['Register', 'Penilaian'],
     'uji.lppm':     ['Register', 'Sertifikat'],
@@ -175,6 +175,74 @@ const tautanNav = p => p.$$eval('nav[aria-label="Bagian"] a', a => a.map(x => x.
   uji('program studi terhapus', !(await page.textContent('#isiTabel')).includes(tanda));
 
   uji('tidak ada galat JavaScript', galat.length === 0, galat.join(' | '));
+  await ctx.close();
+}
+
+// ── Pengaturan: teks sertifikat, admin saja ──
+{
+  const { ctx, page, galat } = await masuk('uji.admin');
+  await page.goto(FE + '/pengaturan/', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1200);
+
+  const judulAsli = await page.inputValue('#JUDUL_KKN');
+  uji('pengaturan termuat', judulAsli.length > 0, judulAsli.slice(0, 30));
+  uji('tanpa galat JS', galat.length === 0, galat.join(' | '));
+
+  // Pratinjau harus menampilkan teks yang benar-benar akan tercetak.
+  const pv = await page.textContent('#pvJudul');
+  uji('pratinjau memuat judulnya', pv.trim() === judulAsli.trim(), pv.slice(0, 30));
+
+  // Penghitung karakter, dan batas yang ditegakkan medan itu sendiri.
+  await page.fill('#JUDUL_KKN', 'Judul Uji Frontend');
+  await page.waitForTimeout(150);
+  uji('penghitung ikut berubah',
+      (await page.textContent('#hitungJudul')).startsWith('18 / 180'),
+      await page.textContent('#hitungJudul'));
+
+  await page.fill('#JUDUL_KKN', 'B'.repeat(250));
+  const panjang = (await page.inputValue('#JUDUL_KKN')).length;
+  uji('medan menahan di 180 karakter', panjang === 180, String(panjang));
+
+  // Simpan sungguhan, lalu kembalikan.
+  await page.fill('#JUDUL_KKN', 'Judul Uji Frontend');
+  await page.click('#tombolSimpan');
+  await page.waitForTimeout(900);
+  const tersimpan = await page.evaluate(async () => {
+    const r = await fetch('http://localhost:8090/api/settings', {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('kkn_token') } });
+    return (await r.json()).data.JUDUL_KKN;
+  });
+  uji('tersimpan ke server', tersimpan === 'Judul Uji Frontend', tersimpan);
+
+  await page.fill('#JUDUL_KKN', judulAsli);
+  await page.click('#tombolSimpan');
+  await page.waitForTimeout(900);
+  const pulih = await page.evaluate(async () => {
+    const r = await fetch('http://localhost:8090/api/settings', {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('kkn_token') } });
+    return (await r.json()).data.JUDUL_KKN;
+  });
+  uji('dikembalikan seperti semula', pulih === judulAsli, pulih.slice(0, 30));
+  await ctx.close();
+}
+
+// ── Pengaturan tertutup untuk peran lain ──
+{
+  const { ctx, page } = await masuk('uji.fakultas');
+  const tautan = await tautanNav(page);
+  uji('admin fakultas tidak melihat Pengaturan', !tautan.includes('Pengaturan'), tautan.join(','));
+
+  await page.goto(FE + '/pengaturan/', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1200);
+  // Layar boleh menyembunyikan tautannya; yang menegakkan tetap server.
+  const kode = await page.evaluate(async () => {
+    const r = await fetch('http://localhost:8090/api/settings', {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('kkn_token') } });
+    return r.status;
+  });
+  uji('server menolak non-admin di /api/settings', kode === 403, String(kode));
+  const pesan = await page.textContent('#pesan');
+  uji('halaman mengatakan hanya admin', /admin/i.test(pesan || ''), (pesan || '').slice(0, 40));
   await ctx.close();
 }
 
