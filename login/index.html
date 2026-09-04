@@ -95,43 +95,54 @@
   </section>
 </div>
 
-<script src="/assets/js/config.js"></script>
-<script src="/assets/js/auth.js"></script>
-<script src="/assets/js/api.js"></script>
-<script src="/assets/js/ui.js"></script>
-<script>
-(function () {
-    "use strict";
-    if (!Auth.requireGuest()) return;
+<script type="module">
+import { getValue } from "/assets/js/jscroot/element.js";
+import { postJSON } from "/assets/js/jscroot/api.js";
+import { redirect } from "/assets/js/jscroot/url.js";
+import { backend } from "/assets/js/config.js";
+import { requireGuest, setSession, landing } from "/assets/js/auth.js";
+import { pesan, sembunyikan } from "/assets/js/ui.js";
 
+if (requireGuest()) {
     const form = document.getElementById("formMasuk");
     const tombol = document.getElementById("tombolMasuk");
-    const pesan = document.getElementById("pesan");
+    const elPesan = document.getElementById("pesan");
 
-    form.addEventListener("submit", async function (e) {
+    form.addEventListener("submit", function (e) {
         e.preventDefault();
-        UI.sembunyikan(pesan);
+        sembunyikan(elPesan);
         tombol.disabled = true;
         tombol.textContent = "Memproses…";
-        try {
-            const res = await Api.post("/auth/login", {
-                uname: document.getElementById("uname").value.trim(),
-                password: document.getElementById("password").value,
-            });
-            if (res && res.data && res.data.token) {
-                Auth.setSession(res.data.token, res.data.user);
-                window.location.href = Auth.landing();
-                return;
-            }
-            UI.pesan(pesan, "Jawaban server tidak dikenali.", "galat");
-        } catch (err) {
-            UI.pesan(pesan, err.message || "Gagal masuk.", "galat");
-        } finally {
-            tombol.disabled = false;
-            tombol.textContent = "Masuk";
-        }
+        postJSON(backend.auth.login, {
+            uname: getValue("uname").trim(),
+            password: getValue("password"),
+        }, jawabanMasuk);
     });
-})();
+
+    function jawabanMasuk(hasil) {
+        tombol.disabled = false;
+        tombol.textContent = "Masuk";
+
+        // hasil.status  = kode HTTP (jscroot)
+        // hasil.data    = amplop GoCroot {status:"ok"|"error", message, data}
+        if (!hasil || typeof hasil.status !== "number") {
+            pesan(elPesan, "Tidak ada jawaban dari server. Periksa sambungan.", "galat");
+            return;
+        }
+        const amplop = hasil.data || {};
+        if (hasil.status !== 200 || amplop.status === "error") {
+            pesan(elPesan, amplop.message || "Gagal masuk.", "galat");
+            return;
+        }
+        const isi = amplop.data || {};
+        if (!isi.token) {
+            pesan(elPesan, "Jawaban server tidak dikenali.", "galat");
+            return;
+        }
+        setSession(isi.token, isi.user);
+        redirect(landing());
+    }
+}
 </script>
 </body>
 </html>

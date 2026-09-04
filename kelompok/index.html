@@ -90,40 +90,39 @@
   </form>
 </aside>
 
-<script src="/assets/js/config.js"></script>
-<script src="/assets/js/auth.js"></script>
-<script src="/assets/js/api.js"></script>
-<script src="/assets/js/ui.js"></script>
-<script src="/assets/js/nav.js"></script>
-<script src="/assets/js/laci.js"></script>
-<script>
-(function () {
-    "use strict";
-    if (!Auth.requireLogin()) return;
-    Nav.pasang("Kelompok KKN");
+<script type="module">
+import { getJSON, postJSON, deleteJSON } from "/assets/js/jscroot/api.js";
+import { backend } from "/assets/js/config.js";
+import { requireLogin, tokenHeader } from "/assets/js/auth.js";
+import { pasang } from "/assets/js/nav.js";
+import { buat as buatLaci } from "/assets/js/laci.js";
+import { el, sel, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
+
+if (requireLogin()) {
+    pasang("Kelompok KKN");
 
     const isi = document.getElementById("isiTabel");
-    const pesan = document.getElementById("pesan");
+    const elPesan = document.getElementById("pesan");
     const ringkasan = document.getElementById("ringkasan");
     const segmen = document.getElementById("segmenTahun");
     const inpCari = document.getElementById("cari");
     const form = document.getElementById("formKelompok");
-    const laci = Laci.buat("laci", "tirai", "tombolBatal");
+    const laci = buatLaci("laci", "tirai", "tombolBatal");
     let tahun = "", sunting = null;
 
     function baris(g) {
-        const tr = UI.el("tr");
-        tr.appendChild(UI.sel(String(g.kelompok || "").replace(/^kelompok\s+/i, ""), "kode"));
-        tr.appendChild(UI.sel(g.lokasi));
-        tr.appendChild(UI.sel(g.nama_dosen, "text-sm"));
-        tr.appendChild(UI.sel(g.nidn, "kode hidden sm:table-cell"));
-        tr.appendChild(UI.sel(g.tahun_ajaran, "kode whitespace-nowrap"));
+        const tr = el("tr");
+        tr.appendChild(sel(String(g.kelompok || "").replace(/^kelompok\s+/i, ""), "kode"));
+        tr.appendChild(sel(g.lokasi));
+        tr.appendChild(sel(g.nama_dosen, "text-sm"));
+        tr.appendChild(sel(g.nidn, "kode hidden sm:table-cell"));
+        tr.appendChild(sel(g.tahun_ajaran, "kode whitespace-nowrap"));
 
-        const td = UI.el("td", "text-right whitespace-nowrap");
-        const ubah = UI.el("button", "tautan-aksi", "Ubah");
+        const td = el("td", "text-right whitespace-nowrap");
+        const ubah = el("button", "tautan-aksi", "Ubah");
         ubah.type = "button";
         ubah.addEventListener("click", function () { bukaForm(g); });
-        const hapus = UI.el("button", "tautan-aksi text-galat ml-3", "Hapus");
+        const hapus = el("button", "tautan-aksi text-galat ml-3", "Hapus");
         hapus.type = "button";
         hapus.addEventListener("click", function () { hapusKelompok(g); });
         td.appendChild(ubah);
@@ -132,45 +131,45 @@
         return tr;
     }
 
-    async function muat() {
-        UI.sembunyikan(pesan);
-        UI.kosongkan(isi);
+    function muat() {
+        sembunyikan(elPesan);
+        kosongkan(isi);
         const p = new URLSearchParams({ limit: "200" });
         if (tahun) p.set("tahun_ajaran", tahun);
         if (inpCari.value.trim()) p.set("q", inpCari.value.trim());
-        try {
-            const res = await Api.get("/api/groups?" + p.toString());
-            if (!res) return;
-            const rows = res.data || [];
-            if (!rows.length) {
-                const tr = UI.el("tr");
-                const td = UI.el("td", "text-center py-10 text-tinta-redup text-sm",
-                    "Belum ada kelompok yang cocok.");
-                td.colSpan = 6;
-                tr.appendChild(td);
-                isi.appendChild(tr);
-            } else {
-                rows.forEach(function (g) { isi.appendChild(baris(g)); });
-            }
-            ringkasan.textContent = (res.meta.total || 0) + " kelompok";
-        } catch (err) {
-            UI.pesan(pesan, err.message || "Gagal memuat kelompok.", "galat");
-        }
+        getJSON(backend.kkn.groups + "?" + p.toString(), jawabanMuat, ...tokenHeader());
     }
 
-    async function muatDosen() {
-        const sel = document.getElementById("fDosen");
-        try {
-            // Hanya DPL — server juga menolak yang bukan, tapi menawarkan
-            // pilihan yang pasti ditolak itu menjebak.
-            const res = await Api.get("/api/lecturers?dpl=1&limit=200");
-            if (!res) return;
-            (res.data || []).forEach(function (d) {
-                const o = UI.el("option", "", d.name + (d.nidn ? " · " + d.nidn : ""));
+    function jawabanMuat(hasil) {
+        if (!sehat(hasil, elPesan)) return;
+        const amplop = hasil.data || {};
+        const rows = amplop.data || [];
+        if (!rows.length) {
+            const tr = el("tr");
+            const td = el("td", "text-center py-10 text-tinta-redup text-sm",
+                "Belum ada kelompok yang cocok.");
+            td.colSpan = 6;
+            tr.appendChild(td);
+            isi.appendChild(tr);
+        } else {
+            rows.forEach(function (g) { isi.appendChild(baris(g)); });
+        }
+        ringkasan.textContent = ((amplop.meta || {}).total || 0) + " kelompok";
+    }
+
+    function muatDosen() {
+        const pilihan = document.getElementById("fDosen");
+        // Hanya DPL — server juga menolak yang bukan, tapi menawarkan
+        // pilihan yang pasti ditolak itu menjebak.
+        getJSON(backend.master.lecturers + "?dpl=1&limit=200", function (hasil) {
+            // Pilihan opsional: kalau gagal, formulirnya tetap bisa dibuka.
+            if (!hasil || hasil.status !== 200) return;
+            ((hasil.data || {}).data || []).forEach(function (d) {
+                const o = el("option", "", d.name + (d.nidn ? " · " + d.nidn : ""));
                 o.value = d.id;
-                sel.appendChild(o);
+                pilihan.appendChild(o);
             });
-        } catch (e) { /* pilihan opsional */ }
+        }, ...tokenHeader());
     }
 
     function bukaForm(g) {
@@ -180,49 +179,45 @@
         form.tahun_ajaran.value = g ? (g.tahun_ajaran || "") : (tahun || "");
         form.lokasi.value = g ? (g.lokasi || "") : "";
         form.lecturer_id.value = g ? (g.lecturer_id || "") : "";
-        UI.sembunyikan(document.getElementById("pesanLaci"));
+        sembunyikan(document.getElementById("pesanLaci"));
         laci.buka();
     }
 
     document.getElementById("tombolTambah").addEventListener("click", function () { bukaForm(null); });
 
-    form.addEventListener("submit", async function (e) {
+    form.addEventListener("submit", function (e) {
         e.preventDefault();
         const pl = document.getElementById("pesanLaci");
-        UI.sembunyikan(pl);
+        sembunyikan(pl);
         const tombol = document.getElementById("tombolSimpan");
         tombol.disabled = true;
-        try {
-            const jalur = "/api/groups" + (sunting ? "?id=" + encodeURIComponent(sunting.id) : "");
-            await Api.post(jalur, {
-                kelompok: form.kelompok.value.trim(),
-                tahun_ajaran: form.tahun_ajaran.value.trim(),
-                lokasi: form.lokasi.value.trim(),
-                lecturer_id: form.lecturer_id.value,
-            });
+
+        const jalur = backend.kkn.groups + (sunting ? "?id=" + encodeURIComponent(sunting.id) : "");
+        postJSON(jalur, {
+            kelompok: form.kelompok.value.trim(),
+            tahun_ajaran: form.tahun_ajaran.value.trim(),
+            lokasi: form.lokasi.value.trim(),
+            lecturer_id: form.lecturer_id.value,
+        }, function (hasil) {
+            tombol.disabled = false;
+            if (!sehat(hasil, pl)) return;
             laci.tutup();
             muat();
-        } catch (err) {
-            UI.pesan(pl, err.message || "Gagal menyimpan.", "galat");
-        } finally {
-            tombol.disabled = false;
-        }
+        }, ...tokenHeader());
     });
 
-    async function hapusKelompok(g) {
+    function hapusKelompok(g) {
         if (!window.confirm("Hapus kelompok " + g.kelompok + "?")) return;
-        try {
-            await Api.del("/api/groups/" + encodeURIComponent(g.id));
-            muat();
-        } catch (err) {
+        deleteJSON(backend.kkn.group(encodeURIComponent(g.id)), {}, function (hasil) {
             // Kelompok yang masih berisi peserta ditolak server; pesannya
-            // menyebut berapa peserta, jadi diteruskan apa adanya.
-            UI.pesan(pesan, err.message || "Gagal menghapus.", "galat");
-        }
+            // menyebut berapa peserta, dan sehat() meneruskannya apa adanya.
+            if (!sehat(hasil, elPesan)) return;
+            muat();
+        }, ...tokenHeader());
     }
 
     function tombolTahun(nilai, label) {
-        const b = UI.el("button", "", label);
+        const b = el("button", "", label);
         b.type = "button";
         b.dataset.nilai = nilai;
         b.setAttribute("aria-pressed", String(tahun === nilai));
@@ -236,12 +231,14 @@
         return b;
     }
 
-    async function muatTahun() {
+    function muatTahun() {
         segmen.appendChild(tombolTahun("", "Semua"));
-        try {
-            const res = await Api.get("/api/academic-years");
-            if (res) (res.data || []).forEach(function (ta) { segmen.appendChild(tombolTahun(ta, ta)); });
-        } catch (e) { /* opsional */ }
+        getJSON(backend.master.academicYears, function (hasil) {
+            if (!hasil || hasil.status !== 200) return;   // opsional
+            ((hasil.data || {}).data || []).forEach(function (ta) {
+                segmen.appendChild(tombolTahun(ta, ta));
+            });
+        }, ...tokenHeader());
     }
 
     let jeda;
@@ -253,7 +250,7 @@
     muatTahun();
     muatDosen();
     muat();
-})();
+}
 </script>
 </body>
 </html>

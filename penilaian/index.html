@@ -64,16 +64,15 @@
   </div>
 </main>
 
-<script src="/assets/js/config.js"></script>
-<script src="/assets/js/auth.js"></script>
-<script src="/assets/js/api.js"></script>
-<script src="/assets/js/ui.js"></script>
-<script src="/assets/js/nav.js"></script>
-<script>
-(function () {
-    "use strict";
-    if (!Auth.requireLogin()) return;
-    Nav.pasang("Penilaian KKN", "Lima aspek · H · S · L · QP · QL");
+<script type="module">
+import { getJSON, postJSON } from "/assets/js/jscroot/api.js";
+import { backend } from "/assets/js/config.js";
+import { requireLogin, tokenHeader } from "/assets/js/auth.js";
+import { pasang } from "/assets/js/nav.js";
+import { el, sel, deretNilai, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
+
+if (requireLogin()) {
+    pasang("Penilaian KKN", "Lima aspek · H · S · L · QP · QL");
 
     const selTahun = document.getElementById("pilihTahun");
     const selKel = document.getElementById("pilihKelompok");
@@ -81,7 +80,7 @@
     const isi = document.getElementById("isiTabel");
     const wadah = document.getElementById("wadahTabel");
     const kosong = document.getElementById("kosong");
-    const pesan = document.getElementById("pesan");
+    const elPesan = document.getElementById("pesan");
 
     const ASPEK = ["nilai_h", "nilai_s", "nilai_l", "nilai_qp", "nilai_ql"];
 
@@ -98,32 +97,32 @@
     }
 
     function gambarDeret(td, r) {
-        UI.kosongkan(td);
-        td.appendChild(UI.deretNilai(r).firstChild);
+        kosongkan(td);
+        td.appendChild(deretNilai(r).firstChild);
     }
 
     function baris(r) {
-        const tr = UI.el("tr");
+        const tr = el("tr");
         tr.dataset.id = r.id;
-        tr.appendChild(UI.sel(r.nim, "kode whitespace-nowrap"));
-        tr.appendChild(UI.sel(r.name, "font-medium"));
+        tr.appendChild(sel(r.nim, "kode whitespace-nowrap"));
+        tr.appendChild(sel(r.name, "font-medium"));
 
-        const tdDeret = UI.el("td");
-        const tdNilai = UI.el("td", "text-right whitespace-nowrap");
+        const tdDeret = el("td");
+        const tdNilai = el("td", "text-right whitespace-nowrap");
 
         function segarkan(data) {
             gambarDeret(tdDeret, data);
-            UI.kosongkan(tdNilai);
+            kosongkan(tdNilai);
             if (data.nilai > 0) {
-                tdNilai.appendChild(UI.el("span", "font-data text-sm tabular-nums", data.nilai));
-                tdNilai.appendChild(UI.el("span", "huruf-mutu text-biru ml-1.5", hurufDari(data.nilai)));
+                tdNilai.appendChild(el("span", "font-data text-sm tabular-nums", data.nilai));
+                tdNilai.appendChild(el("span", "huruf-mutu text-biru ml-1.5", hurufDari(data.nilai)));
             } else {
-                tdNilai.appendChild(UI.el("span", "text-tinta-samar", "—"));
+                tdNilai.appendChild(el("span", "text-tinta-samar", "—"));
             }
         }
 
         ASPEK.forEach(function (aspek) {
-            const td = UI.el("td", "text-center p-1");
+            const td = el("td", "text-center p-1");
             const inp = document.createElement("input");
             inp.type = "number";
             inp.min = "0"; inp.max = "100"; inp.step = "1";
@@ -131,31 +130,31 @@
             inp.value = r[aspek] || "";
             inp.setAttribute("aria-label", aspek.replace("nilai_", "").toUpperCase() + " untuk " + r.name);
 
-            inp.addEventListener("change", async function () {
+            inp.addEventListener("change", function () {
                 const nilai = inp.value === "" ? 0 : Number(inp.value);
                 if (!Number.isInteger(nilai) || nilai < 0 || nilai > 100) {
                     inp.classList.add("salah");
-                    UI.pesan(pesan, "Nilai harus bilangan bulat 0 sampai 100.", "galat");
+                    pesan(elPesan, "Nilai harus bilangan bulat 0 sampai 100.", "galat");
                     return;
                 }
                 inp.classList.remove("salah");
                 inp.classList.add("menyimpan");
-                try {
-                    const res = await Api.post("/api/grades/kkn",
-                        { id: r.id, field: aspek, nilai: nilai });
-                    if (!res) return;
-                    r[aspek] = nilai;
-                    r.nilai = res.data.nilai;
-                    segarkan(r);
-                    UI.sembunyikan(pesan);
-                    inp.classList.remove("menyimpan");
-                    inp.classList.add("tersimpan");
-                    setTimeout(function () { inp.classList.remove("tersimpan"); }, 2000);
-                } catch (err) {
-                    inp.classList.remove("menyimpan");
-                    inp.classList.add("salah");
-                    UI.pesan(pesan, err.message || "Gagal menyimpan nilai.", "galat");
-                }
+                postJSON(backend.kkn.gradesKkn, { id: r.id, field: aspek, nilai: nilai },
+                    function (hasil) {
+                        inp.classList.remove("menyimpan");
+                        if (!sehat(hasil, elPesan)) {
+                            // Kotaknya ditandai salah supaya penilai tahu
+                            // angka di layar TIDAK tersimpan di server.
+                            inp.classList.add("salah");
+                            return;
+                        }
+                        r[aspek] = nilai;
+                        r.nilai = ((hasil.data || {}).data || {}).nilai;
+                        segarkan(r);
+                        sembunyikan(elPesan);
+                        inp.classList.add("tersimpan");
+                        setTimeout(function () { inp.classList.remove("tersimpan"); }, 2000);
+                    }, ...tokenHeader());
             });
             td.appendChild(inp);
             tr.appendChild(td);
@@ -167,9 +166,9 @@
         return tr;
     }
 
-    async function muatAnggota() {
-        const id = selKel.value;
-        if (!id) {
+    function muatAnggota() {
+        const idKel = selKel.value;
+        if (!idKel) {
             wadah.hidden = true;
             kosong.hidden = false;
             ringkas.textContent = "";
@@ -177,48 +176,47 @@
         }
         kosong.hidden = true;
         wadah.hidden = false;
-        UI.kosongkan(isi);
+        kosongkan(isi);
 
-        try {
-            const res = await Api.get("/api/participations?limit=200&group_id=" + encodeURIComponent(id));
-            if (!res) return;
-            const rows = res.data || [];
-            if (!rows.length) {
-                const tr = UI.el("tr");
-                const td = UI.el("td", "text-center py-10 text-tinta-redup text-sm",
-                    "Kelompok ini belum punya anggota.");
-                td.colSpan = 9;
-                tr.appendChild(td);
-                isi.appendChild(tr);
-                ringkas.textContent = "";
-                return;
-            }
-            rows.forEach(function (r) { isi.appendChild(baris(r)); });
-            const dinilai = rows.filter(function (r) { return r.nilai > 0; }).length;
-            ringkas.textContent = dinilai + " dari " + rows.length + " sudah dinilai";
-        } catch (err) {
-            UI.pesan(pesan, err.message || "Gagal memuat anggota kelompok.", "galat");
-        }
+        getJSON(backend.kkn.participations + "?limit=200&group_id=" + encodeURIComponent(idKel),
+            function (hasil) {
+                if (!sehat(hasil, elPesan)) return;
+                const rows = (hasil.data || {}).data || [];
+                if (!rows.length) {
+                    const tr = el("tr");
+                    const td = el("td", "text-center py-10 text-tinta-redup text-sm",
+                        "Kelompok ini belum punya anggota.");
+                    td.colSpan = 9;
+                    tr.appendChild(td);
+                    isi.appendChild(tr);
+                    ringkas.textContent = "";
+                    return;
+                }
+                rows.forEach(function (r) { isi.appendChild(baris(r)); });
+                const dinilai = rows.filter(function (r) { return r.nilai > 0; }).length;
+                ringkas.textContent = dinilai + " dari " + rows.length + " sudah dinilai";
+            }, ...tokenHeader());
     }
 
-    async function muatKelompok() {
+    function muatKelompok() {
         const sebelumnya = selKel.value;
-        UI.kosongkan(selKel);
-        selKel.appendChild(UI.el("option", "", "Pilih kelompok…"));
-        try {
-            const p = new URLSearchParams({ limit: "200" });
-            if (selTahun.value) p.set("tahun_ajaran", selTahun.value);
-            const res = await Api.get("/api/groups?" + p.toString());
-            if (!res) return;
-            (res.data || []).forEach(function (g) {
-                const o = UI.el("option", "",
+        kosongkan(selKel);
+        selKel.appendChild(el("option", "", "Pilih kelompok…"));
+
+        const p = new URLSearchParams({ limit: "200" });
+        if (selTahun.value) p.set("tahun_ajaran", selTahun.value);
+        getJSON(backend.kkn.groups + "?" + p.toString(), function (hasil) {
+            if (!sehat(hasil, elPesan)) { muatAnggota(); return; }
+            const daftar = (hasil.data || {}).data || [];
+            daftar.forEach(function (g) {
+                const o = el("option", "",
                     String(g.kelompok).replace(/^kelompok\s+/i, "Kelompok ") +
                     (g.lokasi ? " — " + g.lokasi : ""));
                 o.value = g.id;
                 selKel.appendChild(o);
             });
-            if (!(res.data || []).length) {
-                selKel.appendChild(UI.el("option", "", "Tidak ada kelompok di tahun ini"));
+            if (!daftar.length) {
+                selKel.appendChild(el("option", "", "Tidak ada kelompok di tahun ini"));
             }
             // Kalau kelompok yang sedang dibuka masih ada di tahun yang baru
             // dipilih, ia tetap terbuka — berpindah tahun lalu kehilangan
@@ -226,32 +224,32 @@
             if (sebelumnya && selKel.querySelector('option[value="' + sebelumnya + '"]')) {
                 selKel.value = sebelumnya;
             }
-        } catch (err) {
-            UI.pesan(pesan, err.message || "Gagal memuat kelompok.", "galat");
-        }
-        muatAnggota();
+            muatAnggota();
+        }, ...tokenHeader());
     }
 
-    async function muatTahun() {
-        try {
-            const res = await Api.get("/api/academic-years");
-            if (!res) return;
-            const daftar = res.data || [];
-            daftar.forEach(function (ta) {
-                const o = UI.el("option", "", ta);
-                o.value = ta;
-                selTahun.appendChild(o);
-            });
-            // Tahun terbaru dipilih lebih dulu — itu yang sedang dikerjakan.
-            if (daftar.length) selTahun.value = daftar[0];
-        } catch (e) { /* saringan opsional */ }
-        muatKelompok();
+    function muatTahun() {
+        getJSON(backend.master.academicYears, function (hasil) {
+            // Saringan opsional; kalau gagal, kelompok tetap dimuat untuk
+            // semua tahun.
+            if (hasil && hasil.status === 200) {
+                const daftar = (hasil.data || {}).data || [];
+                daftar.forEach(function (ta) {
+                    const o = el("option", "", ta);
+                    o.value = ta;
+                    selTahun.appendChild(o);
+                });
+                // Tahun terbaru dipilih lebih dulu — itu yang sedang dikerjakan.
+                if (daftar.length) selTahun.value = daftar[0];
+            }
+            muatKelompok();
+        }, ...tokenHeader());
     }
 
     selTahun.addEventListener("change", muatKelompok);
     selKel.addEventListener("change", muatAnggota);
     muatTahun();
-})();
+}
 </script>
 </body>
 </html>

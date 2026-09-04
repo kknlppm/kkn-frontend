@@ -9,11 +9,11 @@
 <body>
   <div class="pita-atas" aria-hidden="true"></div>
   <div class="min-h-screen grid place-items-center font-data text-xs text-tinta-samar">MEMUAT…</div>
-  <script src="/assets/js/config.js"></script>
-  <script src="/assets/js/auth.js"></script>
-  <script>
+  <script type="module">
     // Pintu masuk: yang sudah punya sesi langsung ke halamannya.
-    window.location.replace(Auth.isLoggedIn() ? Auth.landing() : "/login/");
+    import { redirect } from "/assets/js/jscroot/url.js";
+    import { isLoggedIn, landing } from "/assets/js/auth.js";
+    redirect(isLoggedIn() ? landing() : "/login/");
   </script>
 </body>
 </html>

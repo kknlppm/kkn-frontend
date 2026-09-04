@@ -127,16 +127,15 @@
   </form>
 </main>
 
-<script src="/assets/js/config.js"></script>
-<script src="/assets/js/auth.js"></script>
-<script src="/assets/js/api.js"></script>
-<script src="/assets/js/ui.js"></script>
-<script src="/assets/js/nav.js"></script>
-<script>
-(function () {
-    "use strict";
-    if (!Auth.requireLogin()) return;
-    Nav.pasang("Pengaturan", "Teks dan penanda tangan sertifikat");
+<script type="module">
+import { getJSON, postJSON } from "/assets/js/jscroot/api.js";
+import { backend } from "/assets/js/config.js";
+import { requireLogin, tokenHeader, clear as bersihkanSesi } from "/assets/js/auth.js";
+import { redirect } from "/assets/js/jscroot/url.js";
+import { pasang } from "/assets/js/nav.js";
+
+if (requireLogin()) {
+    pasang("Pengaturan", "Teks dan penanda tangan sertifikat");
 
     const MAKS_JUDUL = 180;
     const KUNCI = [
@@ -197,35 +196,45 @@
         hitung.classList.toggle("text-tinta", n > MAKS_JUDUL * 0.9);
     }
 
-    async function muat() {
-        try {
-            const res = await Api.get("/api/settings");
-            if (!res) return;
-            const d = res.data || {};
+    function muat() {
+        getJSON(backend.master.settings, function (hasil) {
+            if (!hasil || typeof hasil.status !== "number") {
+                galat("Tidak ada jawaban dari server. Periksa sambungan.");
+                return;
+            }
+            if (hasil.status === 401) { bersihkanSesi(); redirect("/login/"); return; }
+            // 403 diberi pesannya sendiri: halaman ini memang hanya untuk
+            // admin, dan "gagal memuat" tidak menjelaskan apa-apa.
+            if (hasil.status === 403) {
+                galat("Hanya admin yang bisa membuka Pengaturan.");
+                return;
+            }
+            const amplop = hasil.data || {};
+            if (hasil.status !== 200) {
+                galat("Gagal memuat pengaturan: " + (amplop.message || "HTTP " + hasil.status));
+                return;
+            }
+            const d = amplop.data || {};
             KUNCI.forEach(function (k) {
-                const el = medan(k);
-                if (el) el.value = d[k] || "";
+                const elemen = medan(k);
+                if (elemen) elemen.value = d[k] || "";
             });
             const ttd = [d.TTD_REKTOR, d.TTD_LPPM].filter(Boolean).join(" · ");
             document.getElementById("berkasTtd").textContent = ttd || "(belum ada)";
             pratinjau();
-        } catch (e) {
-            galat(e.status === 403
-                ? "Hanya admin yang bisa membuka Pengaturan."
-                : "Gagal memuat pengaturan: " + e.message);
-        }
+        }, ...tokenHeader());
     }
 
     form.addEventListener("input", pratinjau);
 
-    form.addEventListener("submit", async function (ev) {
+    form.addEventListener("submit", function (ev) {
         ev.preventDefault();
         bersih();
 
         const kirim = {};
         KUNCI.forEach(function (k) {
-            const el = medan(k);
-            if (el) kirim[k] = el.value.trim();
+            const elemen = medan(k);
+            if (elemen) kirim[k] = elemen.value.trim();
         });
 
         // Diperiksa di sini juga supaya orang tidak menunggu perjalanan ke
@@ -238,20 +247,27 @@
 
         tombol.disabled = true;
         penanda.textContent = "Menyimpan…";
-        try {
-            await Api.post("/api/settings", kirim);
+        postJSON(backend.master.settings, kirim, function (hasil) {
+            tombol.disabled = false;
+            if (!hasil || typeof hasil.status !== "number") {
+                penanda.textContent = "";
+                galat("Tidak ada jawaban dari server. Perubahan BELUM tersimpan.");
+                return;
+            }
+            if (hasil.status === 401) { bersihkanSesi(); redirect("/login/"); return; }
+            const amplop = hasil.data || {};
+            if (hasil.status !== 200 || amplop.status === "error") {
+                penanda.textContent = "";
+                galat(amplop.message || "Gagal menyimpan.");
+                return;
+            }
             penanda.textContent = "Tersimpan";
             setTimeout(function () { penanda.textContent = ""; }, 2000);
-        } catch (e) {
-            penanda.textContent = "";
-            galat(e.message);
-        } finally {
-            tombol.disabled = false;
-        }
+        }, ...tokenHeader());
     });
 
     muat();
-})();
+}
 </script>
 </body>
 </html>

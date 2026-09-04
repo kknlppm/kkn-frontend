@@ -3,89 +3,116 @@
 // Semuanya menulis lewat textContent, tidak pernah innerHTML — token ada di
 // localStorage, jadi satu celah XSS berarti sesi tercuri. Nama mahasiswa dan
 // judul KKN adalah masukan pengguna dan harus diperlakukan begitu.
-(function () {
-    "use strict";
+//
+// Karena itu di sini TIDAK dipakai `setInner` milik jscroot `element.js`
+// (ia menulis lewat innerHTML). Yang boleh untuk data dari basis data hanya
+// `setInnerText`, atau simpul yang dibangun sendiri di bawah ini.
 
-    const UI = {
-        el(tag, kelas, teks) {
-            const e = document.createElement(tag);
-            if (kelas) e.className = kelas;
-            if (teks != null) e.textContent = String(teks);
-            return e;
-        },
+import { clear as bersihkanSesi } from "./auth.js";
+import { redirect } from "./jscroot/url.js";
 
-        sel(teks, kelas) {
-            const td = document.createElement("td");
-            td.className = kelas || "";
-            td.textContent = teks == null || teks === "" ? "—" : String(teks);
-            if (teks == null || teks === "") td.classList.add("text-tinta-samar");
-            return td;
-        },
+export function el(tag, kelas, teks) {
+    const e = document.createElement(tag);
+    if (kelas) e.className = kelas;
+    if (teks != null) e.textContent = String(teks);
+    return e;
+}
 
-        // deretNilai menggambar kelima komponen nilai KKN sebagai lima batang
-        // yang tingginya sebanding dengan skornya.
-        //
-        // Inilah satu-satunya tempat halaman ini bersuara. Ia menjawab
-        // pertanyaan yang benar-benar dihadapi dosen di akhir semester —
-        // siapa yang belum lengkap dinilai — tanpa perlu membuka satu per satu.
-        deretNilai(r) {
-            const komponen = [
-                ["H", r.nilai_h], ["S", r.nilai_s], ["L", r.nilai_l],
-                ["QP", r.nilai_qp], ["QL", r.nilai_ql],
-            ];
-            const wadah = this.el("div", "deret-nilai");
-            // Judul dibaca pembaca layar dan muncul saat disinggahi kursor;
-            // batangnya sendiri tidak menyampaikan angkanya.
-            wadah.title = komponen.map(function (k) { return k[0] + " " + (k[1] || 0); }).join("  ");
+export function sel(teks, kelas) {
+    const td = document.createElement("td");
+    td.className = kelas || "";
+    td.textContent = teks == null || teks === "" ? "—" : String(teks);
+    if (teks == null || teks === "") td.classList.add("text-tinta-samar");
+    return td;
+}
 
-            komponen.forEach(function (k, i) {
-                const nilai = Number(k[1]) || 0;
-                const i_ = document.createElement("i");
-                if (nilai <= 0) {
-                    i_.dataset.kosong = "1";
-                } else {
-                    // Dipetakan dari 45, bukan dari 0.
-                    //
-                    // Hampir seluruh nilai KKN jatuh di rentang 75-95. Pada
-                    // skala 0-100 kelima batangnya tampak sama tinggi dan
-                    // deretnya berubah jadi hiasan. Pita yang benar-benar
-                    // informatif adalah 45 ke atas — di bawah itu semuanya
-                    // gagal dan selisihnya tidak menolong siapa pun.
-                    const b = Math.min(100, Math.max(45, nilai));
-                    i_.style.height = Math.round(5 + ((b - 45) / 55) * 15) + "px";
-                }
-                i_.style.animationDelay = (i * 28) + "ms";
-                wadah.appendChild(i_);
-            });
+// deretNilai menggambar kelima komponen nilai KKN sebagai lima batang
+// yang tingginya sebanding dengan skornya.
+//
+// Inilah satu-satunya tempat halaman ini bersuara. Ia menjawab pertanyaan
+// yang benar-benar dihadapi dosen di akhir semester — siapa yang belum
+// lengkap dinilai — tanpa perlu membuka satu per satu.
+export function deretNilai(r) {
+    const komponen = [
+        ["H", r.nilai_h], ["S", r.nilai_s], ["L", r.nilai_l],
+        ["QP", r.nilai_qp], ["QL", r.nilai_ql],
+    ];
+    const wadah = el("div", "deret-nilai");
+    // Judul dibaca pembaca layar dan muncul saat disinggahi kursor;
+    // batangnya sendiri tidak menyampaikan angkanya.
+    wadah.title = komponen.map(function (k) { return k[0] + " " + (k[1] || 0); }).join("  ");
 
-            const td = document.createElement("td");
-            td.appendChild(wadah);
-            return td;
-        },
+    komponen.forEach(function (k, i) {
+        const nilai = Number(k[1]) || 0;
+        const i_ = document.createElement("i");
+        if (nilai <= 0) {
+            i_.dataset.kosong = "1";
+        } else {
+            // Dipetakan dari 45, bukan dari 0.
+            //
+            // Hampir seluruh nilai KKN jatuh di rentang 75-95. Pada skala
+            // 0-100 kelima batangnya tampak sama tinggi dan deretnya berubah
+            // jadi hiasan. Pita yang benar-benar informatif adalah 45 ke
+            // atas — di bawah itu semuanya gagal dan selisihnya tidak
+            // menolong siapa pun.
+            const b = Math.min(100, Math.max(45, nilai));
+            i_.style.height = Math.round(5 + ((b - 45) / 55) * 15) + "px";
+        }
+        i_.style.animationDelay = (i * 28) + "ms";
+        wadah.appendChild(i_);
+    });
 
-        tanda(teks, jenis) {
-            const sah = ["is-sah", "is-belum", "is-kosong"];
-            const kelas = "is-" + jenis;
-            const s = this.el("span", "tanda " + (sah.includes(kelas) ? kelas : "is-kosong"), teks);
-            const td = document.createElement("td");
-            td.appendChild(s);
-            return td;
-        },
+    const td = document.createElement("td");
+    td.appendChild(wadah);
+    return td;
+}
 
-        pesan(el, teks, jenis) {
-            if (!el) return;
-            const warna = jenis === "galat" ? "bg-galat-muda text-galat"
-                : jenis === "sah" ? "bg-sah-muda text-sah"
-                : "bg-belum-muda text-belum";
-            el.className = "rounded-md px-3 py-2 text-sm mb-4 " + warna;
-            el.textContent = teks;
-            el.hidden = false;
-        },
+export function tanda(teks, jenis) {
+    const sah = ["is-sah", "is-belum", "is-kosong"];
+    const kelas = "is-" + jenis;
+    const s = el("span", "tanda " + (sah.includes(kelas) ? kelas : "is-kosong"), teks);
+    const td = document.createElement("td");
+    td.appendChild(s);
+    return td;
+}
 
-        sembunyikan(el) { if (el) el.hidden = true; },
+export function pesan(elemen, teks, jenis) {
+    if (!elemen) return;
+    const warna = jenis === "galat" ? "bg-galat-muda text-galat"
+        : jenis === "sah" ? "bg-sah-muda text-sah"
+        : "bg-belum-muda text-belum";
+    elemen.className = "rounded-md px-3 py-2 text-sm mb-4 " + warna;
+    elemen.textContent = teks;
+    elemen.hidden = false;
+}
 
-        kosongkan(el) { while (el && el.firstChild) el.removeChild(el.firstChild); },
-    };
+export function sembunyikan(elemen) { if (elemen) elemen.hidden = true; }
 
-    window.UI = UI;
-})();
+export function kosongkan(elemen) { while (elemen && elemen.firstChild) elemen.removeChild(elemen.firstChild); }
+
+// sehat memeriksa hasil panggilan jscroot dan mengembalikan true kalau
+// pemanggil boleh melanjutkan.
+//
+// jscroot `api.js` memanggil callback dengan {status, data} dan TIDAK
+// menangani apa pun sendiri: 401 tidak diperlakukan khusus, dan galat
+// jaringan hanya masuk console.log tanpa callback dipanggil sama sekali.
+// Jadi tiap fungsi jawaban di tiap halaman harus mulai dengan pemeriksaan
+// ini — kalau tidak, sesi yang habis tampak sebagai halaman kosong tanpa
+// sebab, dan token berumur 2 jam membuat itu kejadian harian.
+export function sehat(hasil, elPesan) {
+    if (!hasil || typeof hasil.status !== "number") {
+        pesan(elPesan, "Tidak ada jawaban dari server. Periksa sambungan.", "galat");
+        return false;
+    }
+    if (hasil.status === 401) {
+        bersihkanSesi();
+        redirect("/login/");
+        return false;
+    }
+    if (hasil.status < 200 || hasil.status >= 300) {
+        const d = hasil.data || {};
+        pesan(elPesan, d.message || ("Gagal memuat (HTTP " + hasil.status + ")."), "galat");
+        return false;
+    }
+    return true;
+}

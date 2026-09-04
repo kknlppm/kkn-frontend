@@ -57,19 +57,20 @@
   </nav>
 </main>
 
-<script src="/assets/js/config.js"></script>
-<script src="/assets/js/auth.js"></script>
-<script src="/assets/js/api.js"></script>
-<script src="/assets/js/ui.js"></script>
-<script src="/assets/js/nav.js"></script>
-<script>
-(function () {
-    "use strict";
-    if (!Auth.requireLogin()) return;
-    Nav.pasang("Register KKN");
+<script type="module">
+import { getJSON } from "/assets/js/jscroot/api.js";
+import { getValue } from "/assets/js/jscroot/element.js";
+import { getQueryString } from "/assets/js/jscroot/url.js";
+import { backend } from "/assets/js/config.js";
+import { requireLogin, tokenHeader } from "/assets/js/auth.js";
+import { pasang } from "/assets/js/nav.js";
+import { el, sel, tanda, deretNilai, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
+
+if (requireLogin()) {
+    pasang("Register KKN");
 
     const isi = document.getElementById("isiTabel");
-    const pesan = document.getElementById("pesan");
+    const elPesan = document.getElementById("pesan");
     const ringkasan = document.getElementById("ringkasan");
     const posisi = document.getElementById("posisiHalaman");
     const segmen = document.getElementById("segmenTahun");
@@ -81,86 +82,88 @@
     let halaman = 1, totalHalaman = 1, tahun = "";
 
     function barisPesan(teks) {
-        const tr = UI.el("tr");
-        const td = UI.el("td", "text-center py-12 text-tinta-samar text-sm", teks);
+        const tr = el("tr");
+        const td = el("td", "text-center py-12 text-tinta-samar text-sm", teks);
         td.colSpan = KOLOM;
         tr.appendChild(td);
         return tr;
     }
 
     function gambarBaris(r) {
-        const tr = UI.el("tr");
-        tr.appendChild(UI.sel(r.nim, "kode whitespace-nowrap"));
+        const tr = el("tr");
+        tr.appendChild(sel(r.nim, "kode whitespace-nowrap"));
 
-        const tdNama = UI.sel(r.name, "font-medium");
+        const tdNama = sel(r.name, "font-medium");
         if (r.ketua) {
-            const k = UI.el("span", "tanda is-belum ml-1.5", "ketua");
+            const k = el("span", "tanda is-belum ml-1.5", "ketua");
             tdNama.appendChild(k);
         }
         tr.appendChild(tdNama);
 
-        tr.appendChild(UI.sel(r.prodi, "text-xs text-tinta-redup hidden lg:table-cell"));
+        tr.appendChild(sel(r.prodi, "text-xs text-tinta-redup hidden lg:table-cell"));
         // Sebagian data menuliskan "Kelompok 22", sebagian hanya "33".
         // Kolomnya sudah berjudul Kelompok; awalannya dibuang supaya
         // katanya tidak terbaca dua kali.
-        tr.appendChild(UI.sel(String(r.kelompok || "").replace(/^kelompok\s+/i, ""), "kode"));
-        tr.appendChild(UI.sel(r.tahun_ajaran, "kode whitespace-nowrap hidden md:table-cell"));
+        tr.appendChild(sel(String(r.kelompok || "").replace(/^kelompok\s+/i, ""), "kode"));
+        tr.appendChild(sel(r.tahun_ajaran, "kode whitespace-nowrap hidden md:table-cell"));
 
-        const tdJudul = UI.sel(r.judul_kkn, "text-xs text-tinta-redup hidden xl:table-cell max-w-[22rem] truncate");
+        const tdJudul = sel(r.judul_kkn, "text-xs text-tinta-redup hidden xl:table-cell max-w-[22rem] truncate");
         tdJudul.title = r.judul_kkn || "";
         tr.appendChild(tdJudul);
 
-        tr.appendChild(UI.deretNilai(r));
+        tr.appendChild(deretNilai(r));
 
-        const tdNilai = UI.el("td", "text-right whitespace-nowrap");
+        const tdNilai = el("td", "text-right whitespace-nowrap");
         if (r.nilai > 0) {
-            tdNilai.appendChild(UI.el("span", "huruf-nilai font-data text-sm tabular-nums", r.nilai));
-            tdNilai.appendChild(UI.el("span", "huruf-mutu text-biru ml-1.5", r.huruf || ""));
+            tdNilai.appendChild(el("span", "huruf-nilai font-data text-sm tabular-nums", r.nilai));
+            tdNilai.appendChild(el("span", "huruf-mutu text-biru ml-1.5", r.huruf || ""));
         } else {
-            tdNilai.appendChild(UI.el("span", "text-tinta-samar", "—"));
+            tdNilai.appendChild(el("span", "text-tinta-samar", "—"));
         }
         tr.appendChild(tdNilai);
 
-        tr.appendChild(r.has_cert ? UI.tanda("terbit", "sah") : UI.tanda("belum", "kosong"));
+        tr.appendChild(r.has_cert ? tanda("terbit", "sah") : tanda("belum", "kosong"));
         return tr;
     }
 
-    async function muat() {
-        UI.sembunyikan(pesan);
-        UI.kosongkan(isi);
+    function muat() {
+        sembunyikan(elPesan);
+        kosongkan(isi);
         isi.appendChild(barisPesan("Memuat…"));
 
         const p = new URLSearchParams({ page: String(halaman), limit: "50" });
         if (tahun) p.set("tahun_ajaran", tahun);
         if (inpCari.value.trim()) p.set("q", inpCari.value.trim());
 
-        try {
-            const res = await Api.get("/api/participations?" + p.toString());
-            if (!res) return;
+        getJSON(backend.kkn.participations + "?" + p.toString(), jawabanMuat, ...tokenHeader());
+    }
 
-            UI.kosongkan(isi);
-            const baris = res.data || [];
-            if (!baris.length) {
-                isi.appendChild(barisPesan("Tidak ada peserta yang cocok."));
-            } else {
-                baris.forEach(function (r) { isi.appendChild(gambarBaris(r)); });
-            }
-
-            const m = res.meta || {};
-            totalHalaman = m.total_pages || 1;
-            ringkasan.textContent = (m.total || 0).toLocaleString("id-ID") + " peserta";
-            posisi.textContent = "Halaman " + (m.page || 1) + " dari " + totalHalaman;
-            btnPrev.disabled = (m.page || 1) <= 1;
-            btnNext.disabled = (m.page || 1) >= totalHalaman;
-        } catch (err) {
-            UI.kosongkan(isi);
+    function jawabanMuat(hasil) {
+        if (!sehat(hasil, elPesan)) {
+            kosongkan(isi);
             isi.appendChild(barisPesan("Gagal memuat."));
-            UI.pesan(pesan, err.message || "Gagal memuat data.", "galat");
+            return;
         }
+        const amplop = hasil.data || {};
+
+        kosongkan(isi);
+        const baris = amplop.data || [];
+        if (!baris.length) {
+            isi.appendChild(barisPesan("Tidak ada peserta yang cocok."));
+        } else {
+            baris.forEach(function (r) { isi.appendChild(gambarBaris(r)); });
+        }
+
+        const m = amplop.meta || {};
+        totalHalaman = m.total_pages || 1;
+        ringkasan.textContent = (m.total || 0).toLocaleString("id-ID") + " peserta";
+        posisi.textContent = "Halaman " + (m.page || 1) + " dari " + totalHalaman;
+        btnPrev.disabled = (m.page || 1) <= 1;
+        btnNext.disabled = (m.page || 1) >= totalHalaman;
     }
 
     function tombolTahun(nilai, label) {
-        const b = UI.el("button", "", label);
+        const b = el("button", "", label);
         b.type = "button";
         b.setAttribute("aria-pressed", String(tahun === nilai));
         b.addEventListener("click", function () {
@@ -175,15 +178,19 @@
         return b;
     }
 
-    async function muatTahun() {
+    function muatTahun() {
         segmen.appendChild(tombolTahun("", "Semua"));
-        try {
-            const res = await Api.get("/api/academic-years");
-            if (!res) return;
-            (res.data || []).forEach(function (ta) {
+        getJSON(backend.master.academicYears, function (hasil) {
+            // Saringan opsional: kalau gagal, register tetap terbuka tanpa
+            // tombol tahun. Sengaja TIDAK lewat sehat() — 401 di sini sudah
+            // ditangani panggilan utama, dan dua pengalihan bersamaan
+            // membuat halaman berkedip.
+            if (!hasil || hasil.status !== 200) return;
+            const amplop = hasil.data || {};
+            (amplop.data || []).forEach(function (ta) {
                 segmen.appendChild(tombolTahun(ta, ta));
             });
-        } catch (e) { /* saringan opsional; register tetap terbuka */ }
+        }, ...tokenHeader());
     }
 
     btnPrev.addEventListener("click", function () { if (halaman > 1) { halaman--; muat(); } });
@@ -197,7 +204,7 @@
 
     muatTahun();
     muat();
-})();
+}
 </script>
 </body>
 </html>

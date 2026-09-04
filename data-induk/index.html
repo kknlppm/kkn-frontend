@@ -52,25 +52,24 @@
   </form>
 </aside>
 
-<script src="/assets/js/config.js"></script>
-<script src="/assets/js/auth.js"></script>
-<script src="/assets/js/api.js"></script>
-<script src="/assets/js/ui.js"></script>
-<script src="/assets/js/nav.js"></script>
-<script src="/assets/js/laci.js"></script>
-<script>
-(function () {
-    "use strict";
-    if (!Auth.requireLogin()) return;
-    Nav.pasang("Data induk");
+<script type="module">
+import { getJSON, postJSON, deleteJSON } from "/assets/js/jscroot/api.js";
+import { backend, PERAN } from "/assets/js/config.js";
+import { requireLogin, tokenHeader, getUser } from "/assets/js/auth.js";
+import { pasang } from "/assets/js/nav.js";
+import { buat as buatLaci } from "/assets/js/laci.js";
+import { el, sel, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
 
-    const u = Auth.getUser() || {};
+if (requireLogin()) {
+    pasang("Data induk");
+
+    const u = getUser() || {};
 
     // Keempat jenis data digambarkan sebagai data, bukan sebagai empat
     // salinan kode. Yang berbeda hanya kolom dan medan formulirnya.
     const ENTITAS = {
         programs: {
-            label: "Program studi", tunggal: "program studi", jalur: "/api/programs",
+            label: "Program studi", tunggal: "program studi", jalur: backend.master.programs,
             kolom: [
                 { judul: "Program studi", ambil: function (r) { return r.prodi; }, kelas: "font-medium" },
                 { judul: "Fakultas", ambil: function (r) { return r.fakultas_id || "—"; }, kelas: "kode" },
@@ -82,7 +81,7 @@
             keluar: function (f) { return { prodi: f.prodi, fakultas_id: Number(f.fakultas_id) || 0 }; },
         },
         lecturers: {
-            label: "Dosen", tunggal: "dosen", jalur: "/api/lecturers",
+            label: "Dosen", tunggal: "dosen", jalur: backend.master.lecturers,
             kolom: [
                 { judul: "Nama", ambil: function (r) { return r.name; }, kelas: "font-medium" },
                 { judul: "NIDN", ambil: function (r) { return r.nidn; }, kelas: "kode" },
@@ -107,7 +106,7 @@
             },
         },
         courses: {
-            label: "Mata kuliah", tunggal: "mata kuliah", jalur: "/api/courses",
+            label: "Mata kuliah", tunggal: "mata kuliah", jalur: backend.master.courses,
             kolom: [
                 { judul: "Mata kuliah", ambil: function (r) { return r.matkul; }, kelas: "font-medium" },
                 { judul: "Semester", ambil: function (r) { return r.semester || "—"; }, kelas: "kode" },
@@ -117,8 +116,8 @@
                 { nama: "matkul", label: "Nama mata kuliah", wajib: true },
                 { nama: "semester", label: "Semester", tipe: "number", petunjuk: "0 sampai 14" },
                 { nama: "sks", label: "SKS" },
-                { nama: "program_id", label: "Program studi", tipe: "pilih", sumber: "/api/programs?limit=200",
-                  nilai: "id", teks: "prodi" },
+                { nama: "program_id", label: "Program studi", tipe: "pilih",
+                  sumber: backend.master.programs + "?limit=200", nilai: "id", teks: "prodi" },
             ],
             keluar: function (f) {
                 return { matkul: f.matkul, semester: Number(f.semester) || 0,
@@ -126,7 +125,7 @@
             },
         },
         users: {
-            label: "Pengguna", tunggal: "pengguna", jalur: "/api/users",
+            label: "Pengguna", tunggal: "pengguna", jalur: backend.master.users,
             hanyaAdmin: true,
             kolom: [
                 { judul: "Nama pengguna", ambil: function (r) { return r.uname; }, kelas: "kode" },
@@ -153,36 +152,36 @@
     };
 
     const urutan = Object.keys(ENTITAS).filter(function (k) {
-        return !ENTITAS[k].hanyaAdmin || u.role === Nav.PERAN.ADMIN;
+        return !ENTITAS[k].hanyaAdmin || u.role === PERAN.ADMIN;
     });
     let kini = urutan[0], sunting = null;
 
     const isi = document.getElementById("isiTabel");
     const kepala = document.getElementById("kepalaTabel");
-    const pesan = document.getElementById("pesan");
+    const elPesan = document.getElementById("pesan");
     const ringkasan = document.getElementById("ringkasan");
     const segmen = document.getElementById("segmenEntitas");
     const inpCari = document.getElementById("cari");
     const medanForm = document.getElementById("medanForm");
     const form = document.getElementById("formInduk");
-    const laci = Laci.buat("laci", "tirai", "tombolBatal");
+    const laci = buatLaci("laci", "tirai", "tombolBatal");
 
     function ent() { return ENTITAS[kini]; }
 
     function gambarKepala() {
-        UI.kosongkan(kepala);
-        ent().kolom.forEach(function (k) { kepala.appendChild(UI.el("th", "", k.judul)); });
-        kepala.appendChild(UI.el("th", "text-right", "Tindakan"));
+        kosongkan(kepala);
+        ent().kolom.forEach(function (k) { kepala.appendChild(el("th", "", k.judul)); });
+        kepala.appendChild(el("th", "text-right", "Tindakan"));
     }
 
     function baris(r) {
-        const tr = UI.el("tr");
-        ent().kolom.forEach(function (k) { tr.appendChild(UI.sel(k.ambil(r), k.kelas)); });
-        const td = UI.el("td", "text-right whitespace-nowrap");
-        const ubah = UI.el("button", "tautan-aksi", "Ubah");
+        const tr = el("tr");
+        ent().kolom.forEach(function (k) { tr.appendChild(sel(k.ambil(r), k.kelas)); });
+        const td = el("td", "text-right whitespace-nowrap");
+        const ubah = el("button", "tautan-aksi", "Ubah");
         ubah.type = "button";
         ubah.addEventListener("click", function () { bukaForm(r); });
-        const hapus = UI.el("button", "tautan-aksi text-galat ml-3", "Hapus");
+        const hapus = el("button", "tautan-aksi text-galat ml-3", "Hapus");
         hapus.type = "button";
         hapus.addEventListener("click", function () { hapusBaris(r); });
         td.appendChild(ubah);
@@ -191,19 +190,21 @@
         return tr;
     }
 
-    async function muat() {
-        UI.sembunyikan(pesan);
+    function muat() {
+        sembunyikan(elPesan);
         gambarKepala();
-        UI.kosongkan(isi);
+        kosongkan(isi);
         const p = new URLSearchParams({ limit: "200" });
         if (inpCari.value.trim()) p.set("q", inpCari.value.trim());
-        try {
-            const res = await Api.get(ent().jalur + "?" + p.toString());
-            if (!res) return;
-            const rows = res.data || [];
+        const jenis = kini;   // dikunci: pengguna bisa berpindah tab sebelum jawabannya tiba
+        getJSON(ent().jalur + "?" + p.toString(), function (hasil) {
+            if (jenis !== kini) return;
+            if (!sehat(hasil, elPesan)) return;
+            const amplop = hasil.data || {};
+            const rows = amplop.data || [];
             if (!rows.length) {
-                const tr = UI.el("tr");
-                const td = UI.el("td", "text-center py-10 text-tinta-redup text-sm",
+                const tr = el("tr");
+                const td = el("td", "text-center py-10 text-tinta-redup text-sm",
                     "Belum ada " + ent().tunggal + " yang cocok.");
                 td.colSpan = ent().kolom.length + 1;
                 tr.appendChild(td);
@@ -211,18 +212,20 @@
             } else {
                 rows.forEach(function (r) { isi.appendChild(baris(r)); });
             }
-            ringkasan.textContent = (res.meta.total || 0) + " " + ent().tunggal;
-        } catch (err) {
-            UI.pesan(pesan, err.message || "Gagal memuat data.", "galat");
-        }
+            ringkasan.textContent = ((amplop.meta || {}).total || 0) + " " + ent().tunggal;
+        }, ...tokenHeader());
     }
 
-    async function gambarMedan(data) {
-        UI.kosongkan(medanForm);
-        for (const m of ent().medan) {
-            const bungkus = UI.el("div");
+    // gambarMedan menggambar formulirnya seketika, lalu mengisi pilihan yang
+    // harus diambil dari server saat jawabannya tiba. Dulu ini `await` di
+    // tengah gelung; jscroot bergaya callback, jadi urutannya dibalik —
+    // laci tidak lagi menunggu jaringan sebelum terbuka.
+    function gambarMedan(data) {
+        kosongkan(medanForm);
+        ent().medan.forEach(function (m) {
+            const bungkus = el("div");
             if (m.tipe === "centang") {
-                const l = UI.el("label", "flex items-center gap-2 text-sm");
+                const l = el("label", "flex items-center gap-2 text-sm");
                 const c = document.createElement("input");
                 c.type = "checkbox";
                 c.name = m.nama;
@@ -232,31 +235,38 @@
                 l.appendChild(document.createTextNode(m.label));
                 bungkus.appendChild(l);
             } else if (m.tipe === "pilih") {
-                bungkus.appendChild(Object.assign(UI.el("label", "block text-sm font-medium mb-1.5", m.label),
+                bungkus.appendChild(Object.assign(el("label", "block text-sm font-medium mb-1.5", m.label),
                     { htmlFor: "f_" + m.nama }));
                 const s = document.createElement("select");
                 s.id = "f_" + m.nama;
                 s.name = m.nama;
                 s.className = "medan";
-                s.appendChild(UI.el("option", "", "—"));
-                let opsi = m.pilihan;
-                if (!opsi && m.sumber) {
-                    try {
-                        const res = await Api.get(m.sumber);
-                        opsi = (res && res.data || []).map(function (x) {
-                            return { nilai: x[m.nilai], teks: x[m.teks] };
-                        });
-                    } catch (e) { opsi = []; }
+                s.appendChild(el("option", "", "—"));
+
+                function isiOpsi(opsi) {
+                    (opsi || []).forEach(function (o) {
+                        const op = el("option", "", o.teks);
+                        op.value = o.nilai;
+                        s.appendChild(op);
+                    });
+                    if (data && data[m.nama] != null) s.value = String(data[m.nama]);
                 }
-                (opsi || []).forEach(function (o) {
-                    const el = UI.el("option", "", o.teks);
-                    el.value = o.nilai;
-                    s.appendChild(el);
-                });
-                if (data && data[m.nama] != null) s.value = String(data[m.nama]);
+
+                if (m.pilihan) {
+                    isiOpsi(m.pilihan);
+                } else if (m.sumber) {
+                    getJSON(m.sumber, function (hasil) {
+                        // Pilihan opsional: kalau gagal, medannya tetap ada
+                        // dengan "—" saja.
+                        if (!hasil || hasil.status !== 200) return;
+                        isiOpsi(((hasil.data || {}).data || []).map(function (x) {
+                            return { nilai: x[m.nilai], teks: x[m.teks] };
+                        }));
+                    }, ...tokenHeader());
+                }
                 bungkus.appendChild(s);
             } else {
-                bungkus.appendChild(Object.assign(UI.el("label", "block text-sm font-medium mb-1.5", m.label),
+                bungkus.appendChild(Object.assign(el("label", "block text-sm font-medium mb-1.5", m.label),
                     { htmlFor: "f_" + m.nama }));
                 const i = document.createElement("input");
                 i.id = "f_" + m.nama;
@@ -267,61 +277,58 @@
                 i.value = data ? (data[m.nama] == null ? "" : data[m.nama]) : "";
                 bungkus.appendChild(i);
             }
-            if (m.petunjuk) bungkus.appendChild(UI.el("p", "text-xs text-tinta-redup mt-1", m.petunjuk));
+            if (m.petunjuk) bungkus.appendChild(el("p", "text-xs text-tinta-redup mt-1", m.petunjuk));
             medanForm.appendChild(bungkus);
-        }
+        });
     }
 
-    async function bukaForm(r) {
+    function bukaForm(r) {
         sunting = r || null;
         document.getElementById("judulLaci").textContent =
             (r ? "Ubah " : "Tambah ") + ent().tunggal;
-        UI.sembunyikan(document.getElementById("pesanLaci"));
-        await gambarMedan(r);
+        sembunyikan(document.getElementById("pesanLaci"));
+        gambarMedan(r);
         laci.buka();
     }
 
     document.getElementById("tombolTambah").addEventListener("click", function () { bukaForm(null); });
 
-    form.addEventListener("submit", async function (e) {
+    form.addEventListener("submit", function (e) {
         e.preventDefault();
         const pl = document.getElementById("pesanLaci");
-        UI.sembunyikan(pl);
+        sembunyikan(pl);
         const tombol = document.getElementById("tombolSimpan");
         tombol.disabled = true;
-        try {
-            const f = {};
-            ent().medan.forEach(function (m) {
-                const el = form.elements[m.nama];
-                if (!el) return;
-                f[m.nama] = m.tipe === "centang" ? el.checked : el.value.trim ? el.value.trim() : el.value;
-            });
-            const jalur = ent().jalur + (sunting ? "?id=" + encodeURIComponent(sunting.id) : "");
-            await Api.post(jalur, ent().keluar(f));
+
+        const f = {};
+        ent().medan.forEach(function (m) {
+            const elemen = form.elements[m.nama];
+            if (!elemen) return;
+            f[m.nama] = m.tipe === "centang" ? elemen.checked
+                : (elemen.value.trim ? elemen.value.trim() : elemen.value);
+        });
+        const jalur = ent().jalur + (sunting ? "?id=" + encodeURIComponent(sunting.id) : "");
+        postJSON(jalur, ent().keluar(f), function (hasil) {
+            tombol.disabled = false;
+            if (!sehat(hasil, pl)) return;
             laci.tutup();
             muat();
-        } catch (err) {
-            UI.pesan(pl, err.message || "Gagal menyimpan.", "galat");
-        } finally {
-            tombol.disabled = false;
-        }
+        }, ...tokenHeader());
     });
 
-    async function hapusBaris(r) {
+    function hapusBaris(r) {
         const nama = r.name || r.prodi || r.matkul || r.uname;
         if (!window.confirm("Hapus " + ent().tunggal + " " + nama + "?")) return;
-        try {
-            await Api.del(ent().jalur + "/" + encodeURIComponent(r.id));
-            muat();
-        } catch (err) {
+        deleteJSON(ent().jalur + "/" + encodeURIComponent(r.id), {}, function (hasil) {
             // Server menolak yang masih dipakai, dengan pesan yang menyebut
-            // berapa dan apa pemakainya. Diteruskan apa adanya.
-            UI.pesan(pesan, err.message || "Gagal menghapus.", "galat");
-        }
+            // berapa dan apa pemakainya. sehat() meneruskannya apa adanya.
+            if (!sehat(hasil, elPesan)) return;
+            muat();
+        }, ...tokenHeader());
     }
 
     urutan.forEach(function (k) {
-        const b = UI.el("button", "", ENTITAS[k].label);
+        const b = el("button", "", ENTITAS[k].label);
         b.type = "button";
         b.dataset.entitas = k;
         b.setAttribute("aria-pressed", String(k === kini));
@@ -345,7 +352,7 @@
 
     inpCari.placeholder = "Cari " + ent().tunggal + "…";
     muat();
-})();
+}
 </script>
 </body>
 </html>

@@ -65,8 +65,14 @@ celah XSS berarti sesi tercuri.** Karena itu:
 1. **Jangan pernah `innerHTML` untuk data dari basis data.** Pakai
    `textContent`. Nama mahasiswa dan judul KKN adalah masukan pengguna.
    Perkakas di `assets/js/ui.js` sudah menegakkan ini; pakai itu.
+   Dari jscroot: **`setInnerText`, jangan `setInner`** — `setInner`,
+   `insertHTML`, `renderHTML`, dan `replaceTag` semuanya menulis lewat
+   `innerHTML`.
 2. Tidak ada `eval`, `new Function`, atau URL `javascript:`.
-3. Pustaka pihak ketiga di-*vendor* dari `node_modules`, bukan dari CDN.
+3. Pustaka pihak ketiga di-*vendor*, bukan dari CDN. jscroot tidak ada di
+   npm, jadi `assets/js/jscroot/` di-commit apa adanya — jangan menggantinya
+   dengan impor jsDelivr seperti contoh kanonik jscroot, karena CDN yang
+   tersusupi bisa membaca token di localStorage.
 4. Kelas Tailwind yang dirakit dinamis di JS harus di-*safelist* di
    `tailwind.config.js`, atau warnanya hilang dari `app.css`.
 
@@ -82,12 +88,18 @@ celah XSS berarti sesi tercuri.** Karena itu:
 | `sertifikat/` | Menerbitkan sertifikat dan membuka PDF-nya |
 | `data-induk/` | Program studi, dosen, mata kuliah, pengguna |
 | `verifikasi/` | Verifikasi publik, tanpa login |
-| `assets/js/config.js` | Alamat backend. Tidak boleh memuat rahasia apa pun |
-| `assets/js/auth.js` | Penyimpanan token dan penjaga halaman |
-| `assets/js/api.js` | Pembungkus `fetch`, menyuntik header, menangani 401 |
-| `assets/js/ui.js` | Pembuat elemen yang selalu memakai `textContent` |
+| `assets/js/jscroot/` | **Pustaka jscroot v0.2.8, di-*vendor*.** Jangan disunting — lihat `VERSI.md` di dalamnya |
+| `assets/js/config.js` | Peta `backend` (titik-ujung) dan `id`, bergaya jscroot `skeleton`. Tidak boleh memuat rahasia apa pun |
+| `assets/js/auth.js` | Sesi localStorage, penjaga halaman, dan `tokenHeader()` yang disodorkan ke panggilan jscroot |
+| `assets/js/ui.js` | Pembuat elemen yang selalu memakai `textContent`, plus `sehat()` |
 | `assets/js/nav.js` | Kepala halaman dan navigasi yang mengikuti peran |
 | `assets/js/laci.js` | Laci formulir: fokus dipindah masuk, Escape menutup, Tab terjebak di dalam |
+
+Halaman memanggil `getJSON`/`postJSON`/`deleteJSON` jscroot langsung, dengan
+`...tokenHeader()` di akhir. **Setiap fungsi jawaban harus mulai dengan
+`sehat(hasil, elPesan)`** — jscroot tidak menangani 401 maupun galat jaringan
+sendiri, jadi tanpa itu sesi yang habis tampak sebagai halaman kosong tanpa
+sebab. `uji/uji-jscroot.mjs` menjaganya.
 
 Penjaga di frontend adalah **kenyamanan, bukan keamanan** — yang menegakkan
 izin adalah backend. Ia hanya supaya pengguna tidak melihat kerangka halaman

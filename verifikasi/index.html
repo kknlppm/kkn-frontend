@@ -44,77 +44,104 @@
   </article>
 </main>
 
-<script src="/assets/js/config.js"></script>
-<script src="/assets/js/auth.js"></script>
-<script src="/assets/js/api.js"></script>
-<script src="/assets/js/ui.js"></script>
-<script>
-(function () {
-    "use strict";
-    // Sengaja TANPA penjaga login. Siapa pun yang memegang sertifikat harus
-    // bisa memverifikasinya — itu gunanya QR di sana.
+<script type="module">
+import { getJSON } from "/assets/js/jscroot/api.js";
+import { getQueryString } from "/assets/js/jscroot/url.js";
+import { backend } from "/assets/js/config.js";
+import { el } from "/assets/js/ui.js";
 
-    const memuat = document.getElementById("memuat");
-    const hasil = document.getElementById("hasil");
-    const lencana = document.getElementById("lencana");
-    const rincian = document.getElementById("rincian");
+// Sengaja TANPA penjaga login, dan sengaja TANPA tokenHeader() — siapa pun
+// yang memegang sertifikat harus bisa memverifikasinya, itu gunanya QR di
+// sana. Juga tidak lewat sehat(): pemeriksa yang tidak punya sesi tidak boleh
+// dilempar ke /login/ hanya karena servernya menjawab 401.
 
-    // Token bisa datang dari jalur (/verifikasi/<token>) atau kueri.
-    // QR pada 140+ sertifikat yang sudah tercetak memakai bentuk jalur dan
-    // TIDAK BISA diubah; 404.html yang mengalihkannya ke sini.
-    function bacaToken() {
-        const q = new URLSearchParams(window.location.search).get("token");
-        if (q) return q.trim();
-        const bagian = window.location.pathname.replace(/\/+$/, "").split("/");
-        const akhir = bagian[bagian.length - 1];
-        return akhir && akhir !== "verifikasi" ? akhir.trim() : "";
+const memuat = document.getElementById("memuat");
+const hasil = document.getElementById("hasil");
+const lencana = document.getElementById("lencana");
+const rincian = document.getElementById("rincian");
+
+// Token bisa datang dari jalur (/verifikasi/<token>) atau kueri.
+// QR pada 140+ sertifikat yang sudah tercetak memakai bentuk jalur dan
+// TIDAK BISA diubah; 404.html yang mengalihkannya ke sini.
+function bacaToken() {
+    const q = getQueryString().token;
+    if (q) return q.trim();
+    const bagian = window.location.pathname.replace(/\/+$/, "").split("/");
+    const akhir = bagian[bagian.length - 1];
+    return akhir && akhir !== "verifikasi" ? akhir.trim() : "";
+}
+
+function baris(label, nilai, mono) {
+    if (!nilai) return;
+    const dt = el("dt", "eyebrow mt-4", label);
+    const dd = el("dd", (mono ? "font-data text-sm " : "font-medium ") + "mt-0.5");
+    // textContent, tidak pernah innerHTML — nama mahasiswa adalah masukan
+    // pengguna, dan halaman ini terbuka untuk umum.
+    dd.textContent = nilai;
+    rincian.appendChild(dt);
+    rincian.appendChild(dd);
+}
+
+// takKetahuan dipakai saat server tak terjangkau. Ia SENGAJA dibedakan dari
+// "tidak ditemukan": gagal jaringan bukan bukti sertifikat palsu, dan
+// menyatakannya palsu bisa mempermalukan pemegang sertifikat yang sah di
+// depan orang yang sedang memeriksanya.
+function takKetahuan() {
+    memuat.hidden = true;
+    hasil.hidden = false;
+    lencana.className = "px-8 py-5 text-center bg-belum-muda";
+    lencana.appendChild(el("div", "judul-halaman text-lg text-belum", "Belum bisa diperiksa"));
+    lencana.appendChild(el("p", "text-sm text-tinta-redup mt-1",
+        "Server verifikasi tidak terjangkau. Ini bukan berarti sertifikatnya tidak sah — coba lagi sebentar lagi."));
+}
+
+function tampilkan(d) {
+    if (sudahDijawab) return;
+    sudahDijawab = true;
+    memuat.hidden = true;
+    hasil.hidden = false;
+
+    if (!d || !d.sah) {
+        lencana.className = "px-8 py-5 text-center bg-galat-muda";
+        const t = el("div", "judul-halaman text-lg text-galat", "Sertifikat tidak ditemukan");
+        const s = el("p", "text-sm text-tinta-redup mt-1",
+            "Token pada QR tidak dikenali. Pastikan seluruh kode QR terpindai.");
+        lencana.appendChild(t);
+        lencana.appendChild(s);
+        return;
     }
 
-    function baris(label, nilai, mono) {
-        if (!nilai) return;
-        const dt = UI.el("dt", "eyebrow mt-4", label);
-        const dd = UI.el("dd", (mono ? "font-data text-sm " : "font-medium ") + "mt-0.5");
-        // textContent, tidak pernah innerHTML — nama mahasiswa adalah masukan
-        // pengguna, dan halaman ini terbuka untuk umum.
-        dd.textContent = nilai;
-        rincian.appendChild(dt);
-        rincian.appendChild(dd);
-    }
+    lencana.className = "px-8 py-5 text-center bg-sah-muda";
+    lencana.appendChild(el("div", "judul-halaman text-lg text-sah", "Sertifikat sah"));
 
-    function tampilkan(d) {
-        memuat.hidden = true;
-        hasil.hidden = false;
+    baris("Nama", d.nama);
+    baris("NIM", d.nim, true);
+    baris("Program studi", d.prodi);
+    baris("Tahun akademik", d.tahun_ajaran, true);
+    baris("Nomor sertifikat", d.no_sertifikat, true);
+    baris("Tanggal terbit", d.tanggal);
+}
 
-        if (!d || !d.sah) {
-            lencana.className = "px-8 py-5 text-center bg-galat-muda";
-            const t = UI.el("div", "judul-halaman text-lg text-galat", "Sertifikat tidak ditemukan");
-            const s = UI.el("p", "text-sm text-tinta-redup mt-1",
-                "Token pada QR tidak dikenali. Pastikan seluruh kode QR terpindai.");
-            lencana.appendChild(t);
-            lencana.appendChild(s);
-            return;
-        }
+let sudahDijawab = false;
 
-        lencana.className = "px-8 py-5 text-center bg-sah-muda";
-        lencana.appendChild(UI.el("div", "judul-halaman text-lg text-sah", "Sertifikat sah"));
+const token = bacaToken();
+if (!token) {
+    tampilkan(null);
+} else {
+    // jscroot `api.js` menelan galat jaringan ke console dan TIDAK memanggil
+    // callback-nya sama sekali. Tanpa penjaga waktu ini halaman berhenti di
+    // "Memuat…" selamanya saat server mati.
+    const penjagaWaktu = setTimeout(function () {
+        if (!sudahDijawab) { sudahDijawab = true; takKetahuan(); }
+    }, 10000);
 
-        baris("Nama", d.nama);
-        baris("NIM", d.nim, true);
-        baris("Program studi", d.prodi);
-        baris("Tahun akademik", d.tahun_ajaran, true);
-        baris("Nomor sertifikat", d.no_sertifikat, true);
-        baris("Tanggal terbit", d.tanggal);
-    }
-
-    const token = bacaToken();
-    if (!token) {
-        tampilkan(null);
-    } else {
-        Api.get("/verifikasi/" + encodeURIComponent(token))
-            .then(function (res) { tampilkan(res && res.data); })
-            .catch(function () { tampilkan(null); });
-    }
-})();
+    getJSON(backend.certificate.verify(encodeURIComponent(token)), function (h) {
+        clearTimeout(penjagaWaktu);
+        if (!h || typeof h.status !== "number") { takKetahuan(); return; }
+        if (h.status >= 500) { takKetahuan(); return; }
+        tampilkan(h.status === 200 && h.data ? h.data.data : null);
+    });
+}
 </script>
 </body>
 </html>

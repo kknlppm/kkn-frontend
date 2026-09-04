@@ -51,19 +51,18 @@
   </div>
 </main>
 
-<script src="/assets/js/config.js"></script>
-<script src="/assets/js/auth.js"></script>
-<script src="/assets/js/api.js"></script>
-<script src="/assets/js/ui.js"></script>
-<script src="/assets/js/nav.js"></script>
-<script>
-(function () {
-    "use strict";
-    if (!Auth.requireLogin()) return;
-    Nav.pasang("Sertifikat KKN");
+<script type="module">
+import { getJSON, postJSON } from "/assets/js/jscroot/api.js";
+import { backend, tokenKey } from "/assets/js/config.js";
+import { requireLogin, tokenHeader, getToken } from "/assets/js/auth.js";
+import { pasang } from "/assets/js/nav.js";
+import { el, sel, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
+
+if (requireLogin()) {
+    pasang("Sertifikat KKN");
 
     const isi = document.getElementById("isiTabel");
-    const pesan = document.getElementById("pesan");
+    const elPesan = document.getElementById("pesan");
     const ringkasan = document.getElementById("ringkasan");
     const ket = document.getElementById("keteranganTapis");
     const segTahun = document.getElementById("segmenTahun");
@@ -74,61 +73,66 @@
     function tombolUnduh(r) {
         // Dibuka di tab baru, bukan diunduh paksa: orang biasanya ingin
         // MELIHAT sertifikatnya dulu sebelum menyimpannya.
-        const a = UI.el("a", "tautan-aksi", "Lihat PDF");
-        a.href = Api.base + "/api/certificates/" + encodeURIComponent(r.id) + "/pdf";
+        const a = el("a", "tautan-aksi", "Lihat PDF");
+        a.href = backend.certificate.pdf(encodeURIComponent(r.id));
         a.target = "_blank";
         a.rel = "noopener";
         a.addEventListener("click", async function (e) {
-            // Berkas PDF butuh header Authorization, dan tautan biasa tidak
+            // Berkas PDF butuh header token, dan tautan biasa tidak
             // membawanya. Jadi diambil sebagai blob lalu dibuka.
+            //
+            // Ditulis tangan, TIDAK memakai pembantu berkas jscroot, dan itu
+            // disengaja: `getFileWithHeader` memaksa unduh lewat a.download
+            // (bukan membuka, yang justru maunya di sini), dan
+            // `getFileBytesWithHeader` mengembalikan arrayBuffer ke rantai
+            // .then yang tidak punya penerima — pada status 200 bytes-nya
+            // hilang dan callback-nya tidak pernah dipanggil.
             e.preventDefault();
             try {
-                const res = await fetch(a.href, {
-                    headers: { Authorization: "Bearer " + Auth.getToken() },
-                });
+                const res = await fetch(a.href, { headers: { [tokenKey]: getToken() } });
                 if (!res.ok) throw new Error("Gagal mengambil sertifikat.");
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
                 window.open(url, "_blank", "noopener");
                 setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
             } catch (err) {
-                UI.pesan(pesan, err.message || "Gagal membuka sertifikat.", "galat");
+                pesan(elPesan, err.message || "Gagal membuka sertifikat.", "galat");
             }
         });
         return a;
     }
 
     function baris(r) {
-        const tr = UI.el("tr");
-        tr.appendChild(UI.sel(r.nim, "kode whitespace-nowrap"));
-        tr.appendChild(UI.sel(r.name, "font-medium"));
-        tr.appendChild(UI.sel(String(r.kelompok || "").replace(/^kelompok\s+/i, ""), "kode hidden md:table-cell"));
-        tr.appendChild(UI.sel(r.tahun_ajaran, "kode whitespace-nowrap"));
+        const tr = el("tr");
+        tr.appendChild(sel(r.nim, "kode whitespace-nowrap"));
+        tr.appendChild(sel(r.name, "font-medium"));
+        tr.appendChild(sel(String(r.kelompok || "").replace(/^kelompok\s+/i, ""), "kode hidden md:table-cell"));
+        tr.appendChild(sel(r.tahun_ajaran, "kode whitespace-nowrap"));
 
-        const tdNilai = UI.el("td", "text-right whitespace-nowrap");
-        tdNilai.appendChild(UI.el("span", "font-data text-sm tabular-nums", r.nilai || "—"));
-        if (r.huruf) tdNilai.appendChild(UI.el("span", "huruf-mutu text-biru ml-1.5", r.huruf));
+        const tdNilai = el("td", "text-right whitespace-nowrap");
+        tdNilai.appendChild(el("span", "font-data text-sm tabular-nums", r.nilai || "—"));
+        if (r.huruf) tdNilai.appendChild(el("span", "huruf-mutu text-biru ml-1.5", r.huruf));
         tr.appendChild(tdNilai);
 
-        const td = UI.el("td", "text-right whitespace-nowrap");
+        const td = el("td", "text-right whitespace-nowrap");
         if (r.has_cert) {
             td.appendChild(tombolUnduh(r));
         } else {
-            const b = UI.el("button", "tombol-halus py-1 px-3 text-xs", "Terbitkan");
+            const b = el("button", "tombol-halus py-1 px-3 text-xs", "Terbitkan");
             b.type = "button";
-            b.addEventListener("click", async function () {
+            b.addEventListener("click", function () {
                 b.disabled = true;
                 b.textContent = "Menerbitkan…";
-                try {
-                    const res = await Api.post("/api/certificates/" + encodeURIComponent(r.id) + "/issue", {});
-                    if (!res) return;
-                    UI.pesan(pesan, "Sertifikat " + res.data.no_sertifikat + " diterbitkan untuk " + r.name + ".", "sah");
+                postJSON(backend.certificate.issue(encodeURIComponent(r.id)), {}, function (hasil) {
+                    if (!sehat(hasil, elPesan)) {
+                        b.disabled = false;
+                        b.textContent = "Terbitkan";
+                        return;
+                    }
+                    const d = (hasil.data || {}).data || {};
+                    pesan(elPesan, "Sertifikat " + d.no_sertifikat + " diterbitkan untuk " + r.name + ".", "sah");
                     muat();
-                } catch (err) {
-                    b.disabled = false;
-                    b.textContent = "Terbitkan";
-                    UI.pesan(pesan, err.message || "Gagal menerbitkan.", "galat");
-                }
+                }, ...tokenHeader());
             });
             td.appendChild(b);
         }
@@ -136,8 +140,8 @@
         return tr;
     }
 
-    async function muat() {
-        UI.kosongkan(isi);
+    function muat() {
+        kosongkan(isi);
         ket.textContent = status === "siap"
             ? "Peserta yang sudah punya nilai KKN tapi sertifikatnya belum diterbitkan."
             : "Peserta yang sertifikatnya sudah terbit. Nomor dan tokennya tidak berubah lagi.";
@@ -149,13 +153,13 @@
         if (tahun) p.set("tahun_ajaran", tahun);
         if (inpCari.value.trim()) p.set("q", inpCari.value.trim());
 
-        try {
-            const res = await Api.get("/api/participations?" + p.toString());
-            if (!res) return;
-            const rows = res.data || [];
+        getJSON(backend.kkn.participations + "?" + p.toString(), function (hasil) {
+            if (!sehat(hasil, elPesan)) return;
+            const amplop = hasil.data || {};
+            const rows = amplop.data || [];
             if (!rows.length) {
-                const tr = UI.el("tr");
-                const td = UI.el("td", "text-center py-10 text-tinta-redup text-sm",
+                const tr = el("tr");
+                const td = el("td", "text-center py-10 text-tinta-redup text-sm",
                     status === "siap"
                         ? "Tidak ada yang siap diterbitkan pada tapisan ini."
                         : "Belum ada sertifikat terbit pada tapisan ini.");
@@ -165,12 +169,10 @@
             } else {
                 rows.forEach(function (r) { isi.appendChild(baris(r)); });
             }
-            const total = (res.meta && res.meta.total) || rows.length;
+            const total = (amplop.meta && amplop.meta.total) || rows.length;
             ringkasan.textContent = total.toLocaleString("id-ID") + " peserta" +
                 (total > rows.length ? " · menampilkan " + rows.length : "");
-        } catch (err) {
-            UI.pesan(pesan, err.message || "Gagal memuat data.", "galat");
-        }
+        }, ...tokenHeader());
     }
 
     segStatus.querySelectorAll("button").forEach(function (b) {
@@ -184,7 +186,7 @@
     });
 
     function tombolTahun(nilai, label) {
-        const b = UI.el("button", "", label);
+        const b = el("button", "", label);
         b.type = "button";
         b.dataset.nilai = nilai;
         b.setAttribute("aria-pressed", String(tahun === nilai));
@@ -198,12 +200,14 @@
         return b;
     }
 
-    async function muatTahun() {
+    function muatTahun() {
         segTahun.appendChild(tombolTahun("", "Semua"));
-        try {
-            const res = await Api.get("/api/academic-years");
-            if (res) (res.data || []).forEach(function (ta) { segTahun.appendChild(tombolTahun(ta, ta)); });
-        } catch (e) { /* opsional */ }
+        getJSON(backend.master.academicYears, function (hasil) {
+            if (!hasil || hasil.status !== 200) return;   // opsional
+            ((hasil.data || {}).data || []).forEach(function (ta) {
+                segTahun.appendChild(tombolTahun(ta, ta));
+            });
+        }, ...tokenHeader());
     }
 
     let jeda;
@@ -214,7 +218,7 @@
 
     muatTahun();
     muat();
-})();
+}
 </script>
 </body>
 </html>

@@ -21,6 +21,7 @@ Lalu:
 |---|---|
 | `uji-frontend.mjs` | Masuk, daftar peserta, paginasi, saringan, **cakupan per peran**, dan bahwa `UI.sel` tidak menafsirkan HTML |
 | `uji-verifikasi.mjs` | Halaman verifikasi publik bekerja **tanpa sesi sama sekali**, token palsu ditolak, dan nilai tidak pernah ikut terkirim |
+| `uji-jscroot.mjs` | Adopsi jscroot: tiap halaman memuat rantai modulnya, header `login` terkirim di halaman terlindungi dan TIDAK di verifikasi publik, 401 membuang sesi, data tidak jadi HTML. **Tidak butuh backend hidup** — jawabannya dipalsukan lewat `page.route`, jadi `node uji-jscroot.mjs` bisa dijalankan sendirian dengan hanya server statis |
 
 Uji XSS-nya menyuntik `<img src=x onerror=...>` lewat jalur yang sama dengan
 data asli, lalu memastikan tidak ada elemen `<img>` yang lahir. Token ada di
