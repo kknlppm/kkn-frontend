@@ -485,16 +485,40 @@ body.nav-open .nav__mobile { display: block; }
 .acc__a p { padding: 0 26px 24px; color: var(--text-2); font-size: 15px; max-width: 620px; }
 .acc__a p + p { padding-top: 0; margin-top: -10px; }
 
-/* Ajakan penutup ------------------------------------------------------- */
-.cta { position: relative; overflow: hidden; padding: 160px 0 140px; text-align: center; }
-.cta__bg { position: absolute; inset: 0; background: linear-gradient(180deg, #000 0%, #0b1015 40%, #16202a 70%, #24333f 100%); }
-.cta__dunes { position: absolute; left: 0; right: 0; bottom: 0; height: 55%; background: url("/assets/img/beranda-punggung.webp") center bottom / cover no-repeat; opacity: .4; }
-.cta .container { position: relative; display: grid; grid-template-columns: 420px 1fr; gap: 48px; align-items: center; text-align: left; }
-.cta__teks { display: flex; flex-direction: column; gap: 20px; align-items: flex-start; }
-.cta__mock { position: relative; perspective: 1400px; }
-.cta__mock .sertifikat { transform: rotateX(6deg) rotateY(-8deg); max-width: 520px; }
-.cta .h1 { max-width: 420px; }
-.cta p { color: var(--text-2); max-width: 380px; }
+/* Ajakan penutup -------------------------------------------------------
+   Padding bawah NOL, dan jendelanya menembus ke kaki halaman — itulah yang
+   membuat bagian ini berlapis, bukan gradiennya. Urutan lapisnya dari
+   belakang: langit bergradien, gurun, jendela separuh terpotong, lalu kaki.
+   Pola `.cta` Fora. */
+.cta { position: relative; overflow: hidden; padding: 190px 0 0; }
+.cta__bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, #000 0%, #0b1015 40%, #16202a 60%, #2c3a44 85%, #5d7c92 100%);
+}
+.cta__dunes {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 45%;
+  background: url("/assets/img/beranda-punggung.webp") center bottom / cover no-repeat;
+  opacity: .75;
+}
+.cta .container {
+  position: relative; display: grid; grid-template-columns: 380px 1fr;
+  gap: 40px; align-items: center; text-align: left;
+}
+.cta__teks { display: flex; flex-direction: column; align-items: flex-start; }
+.cta__teks .h1 { margin-bottom: 24px; font-size: clamp(36px, 4.4vw, 52px); max-width: 360px; }
+.cta__teks p { color: var(--text-2); max-width: 330px; margin-bottom: 32px; }
+
+/* Jendela penutup: lebih lebar dari kolomnya dan sengaja meluber, supaya
+   tepi kanannya keluar bidang seperti di Fora. Auroranya dimatikan — di sini
+   yang menyala latarnya, bukan layarnya. */
+.cta__mock { justify-self: start; width: 840px; max-width: none; }
+.cta__mock .jendela { min-height: 520px; background: rgba(12, 12, 12, .55); }
+.cta__mock .aurora { display: none; }
+.cta__mock .jendela__utama { background: linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.05)); }
+.cta__mock .jendela__isi { padding-top: 150px; }
+/* Jendelanya sengaja meluber keluar bidang, tapi isinya tidak boleh ikut
+   terpotong — dibatasi dan dipusatkan di dalam kolomnya. */
+.cta__mock .kaca { max-width: 420px; margin: 0 auto; }
 
 /* Kaki ----------------------------------------------------------------- */
 .footer { background: #000; padding: 64px 0 34px; border-top: 1px solid var(--line); }
@@ -546,9 +570,13 @@ body.nav-open .nav__mobile { display: block; }
   .jendela__sisi { display: none; }
   .panggung { min-height: 620px; }
   .panggung__slide { grid-template-columns: 1fr; gap: 18px; align-content: center; }
+  .cta { padding-top: 110px; }
   .cta .container { grid-template-columns: 1fr; text-align: center; }
   .cta__teks { align-items: center; }
-  .cta__mock { display: none; }
+  .cta__teks .h1, .cta__teks p { max-width: none; }
+  .cta__mock { width: 100%; justify-self: stretch; }
+  .cta__mock .jendela { min-height: 340px; }
+  .cta__mock .jendela__isi { padding-top: 28px; }
   .faq { grid-template-columns: 1fr; }
   .footer__grid { grid-template-columns: 1fr 1fr; }
   .cta { padding: 110px 0 96px; }
