@@ -100,7 +100,7 @@ import { getValue } from "/assets/js/jscroot/element.js";
 import { postJSON } from "/assets/js/jscroot/api.js";
 import { redirect } from "/assets/js/jscroot/url.js";
 import { backend } from "/assets/js/config.js";
-import { requireGuest, setSession, landing } from "/assets/js/auth.js";
+import { requireGuest, setSession, tujuanSetelahMasuk } from "/assets/js/auth.js";
 import { pesan, sembunyikan } from "/assets/js/ui.js";
 
 if (requireGuest()) {
@@ -140,7 +140,7 @@ if (requireGuest()) {
             return;
         }
         setSession(isi.token, isi.user);
-        redirect(landing());
+        redirect(tujuanSetelahMasuk());
     }
 }
 </script>

@@ -69,15 +69,18 @@ export function requireLogin() {
 
 export function requireGuest() {
     if (isLoggedIn()) {
-        redirect(landing());
+        redirect(tujuanSetelahMasuk());
         return false;
     }
     return true;
 }
 
-// landing menentukan halaman tujuan setelah masuk, sesuai peran.
+// tujuanSetelahMasuk menentukan halaman tujuan sesudah masuk, sesuai peran.
 // Meniru switch di Auth.php aplikasi lama.
-export function landing() {
+//
+// Namanya dulu `landing()`. Diganti saat halaman depan publik lahir di `/` —
+// dua hal berbeda tidak boleh memakai kata yang sama di repo yang sama.
+export function tujuanSetelahMasuk() {
     const u = getUser() || {};
     switch (u.role) {
         case PERAN.PEMBAYARAN: return "/data-kkn/?bayar=1";

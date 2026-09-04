@@ -13,6 +13,12 @@
 //   6. 401 membuang sesi dan kembali ke /login/ — jscroot `api.js` tidak
 //      menangani ini sendiri, jadi kalau ui.js:sehat() dilewati di satu
 //      halaman, sesi habis akan tampak sebagai halaman kosong tanpa sebab.
+//   7. Halaman depan publik berdiri sendiri: tidak mengalihkan, tidak
+//      memanggil API sama sekali, dan modulnya benar-benar berjalan.
+//   8. Halaman depan tetap tampil untuk yang sudah punya sesi — itu keputusan
+//      pemilik, dan gampang tergerus kalau nanti ada yang memasang penjaga.
+//   9. Rantai QR `/verifikasi/<token>` -> 404.html -> `?token=` masih utuh.
+//      Bentuk jalur itu tercetak di 140+ sertifikat dan tidak bisa diubah.
 //
 // Backend TIDAK perlu hidup: jawabannya dipalsukan lewat page.route, jadi uji
 // ini bisa dijalankan sendirian.
@@ -21,6 +27,10 @@
 //               node uji-jscroot.mjs
 
 import { chromium } from "playwright";
+import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
+import { extname, join, normalize } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const B = "http://localhost:5173";
 const browser = await chromium.launch();
@@ -155,6 +165,101 @@ for (const jalur of terlindungi) {
     lapor(page.url().includes("/login/"), `401 mengalihkan ke /login/ (${page.url()})`);
     lapor(sisa === null, `401 membuang token (sisa: ${sisa})`);
     await ctx.close();
+}
+
+// ---------- 7. Halaman depan publik ----------
+{
+    const { ctx, page, galat } = await halamanBaru(false);
+    let apiDipanggil = 0;
+    await page.route("**/localhost:8090/**", (r) => { apiDipanggil++; return r.abort(); });
+    await page.goto(B + "/", { waitUntil: "networkidle" });
+
+    lapor(new URL(page.url()).pathname === "/", `halaman depan tidak mengalihkan (${page.url()})`);
+    lapor(galat.length === 0, "halaman depan memuat tanpa galat" +
+        (galat.length ? "\n    " + galat.join("\n    ") : ""));
+    lapor(apiDipanggil === 0, `halaman depan tidak memanggil API sama sekali (${apiDipanggil} panggilan)`);
+
+    // Modulnya benar-benar berjalan, bukan sekadar tidak melempar galat.
+    const faq = await page.locator("#daftarFaq .acc").count();
+    lapor(faq >= 5, `tanya jawab tergambar (${faq} butir)`);
+
+    const ket = await page.textContent("#ketTahap");
+    lapor(!!(ket || "").trim(), `tahapan aktif punya keterangan ("${(ket || "").slice(0, 40)}…")`);
+
+    // Berpindah tahap benar-benar mengganti panel.
+    await page.locator("#tabTahap button").nth(3).click();
+    await page.waitForTimeout(300);
+    const judulTahap = await page.textContent(".panggung__slide.is-active .panggung__judul");
+    lapor(/Penilaian/i.test(judulTahap || ""), `tab keempat membuka panel yang benar ("${judulTahap}")`);
+
+    // Kedua pintu keluar halaman depan harus benar.
+    const masuk = await page.locator('a[href="/login/"]').count();
+    const verif = await page.locator('a[href="/verifikasi/"]').count();
+    lapor(masuk > 0 && verif > 0, `tautan Masuk (${masuk}) dan Verifikasi (${verif}) ada`);
+
+    await ctx.close();
+}
+
+// ---------- 8. Halaman depan tetap tampil walau sudah punya sesi ----------
+{
+    const { ctx, page } = await halamanBaru(true);
+    await page.goto(B + "/", { waitUntil: "networkidle" });
+    lapor(new URL(page.url()).pathname === "/",
+        `yang sudah masuk pun melihat halaman depan (${page.url()})`);
+    const hero = await page.locator(".hero__content .h1").count();
+    lapor(hero === 1, "isi halaman depan tergambar untuk pengguna bersesi");
+    await ctx.close();
+}
+
+// ---------- 9. Rantai QR: /verifikasi/<token> lewat 404.html ----------
+//
+// Bentuk jalur inilah yang tercetak di kode QR pada 140+ sertifikat yang sudah
+// beredar, dan ia TIDAK BISA diubah. GitHub Pages menyajikan 404.html untuk
+// jalur yang tidak punya berkas; server statis biasa tidak. Jadi di sini
+// dijalankan server kecil yang meniru perilaku Pages — kalau tidak, uji ini
+// lulus di laptop dan gagal di produksi.
+{
+    const AKAR = fileURLToPath(new URL("..", import.meta.url));
+    const TIPE = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
+                   ".svg": "image/svg+xml", ".webp": "image/webp", ".png": "image/png" };
+
+    const pages = createServer(async (req, res) => {
+        const jalur = decodeURIComponent(new URL(req.url, "http://x").pathname);
+        let berkas = join(AKAR, normalize(jalur).replace(/^(\.\.[/\\])+/, ""));
+        if (jalur.endsWith("/")) berkas = join(berkas, "index.html");
+        try {
+            const isi = await readFile(berkas);
+            res.writeHead(200, { "Content-Type": TIPE[extname(berkas)] || "application/octet-stream" });
+            res.end(isi);
+        } catch {
+            // Persis Pages: 404 dijawab dengan 404.html, bukan halaman bawaan.
+            const isi = await readFile(join(AKAR, "404.html"));
+            res.writeHead(404, { "Content-Type": "text/html" });
+            res.end(isi);
+        }
+    });
+    await new Promise((r) => pages.listen(5174, r));
+
+    const { ctx, page } = await halamanBaru(false);
+    const TOKEN = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
+    let diminta = null;
+    await page.route("**/localhost:8090/**", (r) => {
+        diminta = r.request().url();
+        return r.fulfill({ status: 200, contentType: "application/json",
+            body: JSON.stringify(amplop({ sah: true, nama: "Contoh Peserta", nim: "12345" })) });
+    });
+
+    await page.goto("http://localhost:5174/verifikasi/" + TOKEN, { waitUntil: "networkidle" });
+
+    lapor(page.url().includes("/verifikasi/?token=" + TOKEN),
+        `QR bentuk jalur dialihkan ke bentuk kueri (${page.url()})`);
+    lapor(!!diminta && diminta.includes(TOKEN),
+        `token diteruskan ke backend apa adanya (${diminta})`);
+    const teks = await page.textContent("#hasil");
+    lapor(/Contoh Peserta/.test(teks || ""), "hasil verifikasi tergambar dari rantai QR");
+
+    await ctx.close();
+    await new Promise((r) => pages.close(r));
 }
 
 await browser.close();

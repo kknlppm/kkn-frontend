@@ -1,6 +1,19 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-    content: ["./**/*.html", "./assets/js/**/*.js"],
+    // Halaman depan (`index.html` + `beranda.js`) SENGAJA di luar Tailwind —
+    // ia gelap dan memakai `assets/css/beranda.css` sendiri. Tanpa dikecualikan,
+    // kelas-kelasnya ikut menumpuk di app.css yang tidak pernah memakainya.
+    // `node_modules` dan `uji` dikecualikan supaya pemindaian tidak menyapu
+    // ribuan berkas yang bukan milik situs ini.
+    content: [
+        "./**/*.html",
+        "!./index.html",
+        "!./node_modules/**",
+        "!./uji/**",
+        "./assets/js/**/*.js",
+        "!./assets/js/beranda.js",
+        "!./assets/js/jscroot/**",
+    ],
 
     // Kelas yang dirakit dinamis di JavaScript tidak terlihat oleh pemindai
     // Tailwind. Tanpa disebut di sini, kelasnya hilang dari app.css.

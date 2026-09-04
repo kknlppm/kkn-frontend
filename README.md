@@ -80,7 +80,10 @@ celah XSS berarti sesi tercuri.** Karena itu:
 
 | | |
 |---|---|
-| `index.html` | Pintu masuk; melempar ke `/login/` atau halaman sesuai peran |
+| `index.html` | **Halaman depan publik — GELAP.** Tampil untuk semua, termasuk yang sudah punya sesi |
+| `assets/css/beranda.css` | Gaya halaman depan. **Bukan Tailwind, bukan hasil build — ditulis tangan dan di-commit** |
+| `assets/js/beranda.js` | Perilaku halaman depan. Tidak memanggil API sama sekali |
+| `assets/img/` | Latar halaman depan. Lihat `SUMBER.md` di dalamnya — keduanya masih placeholder |
 | `login/` | Halaman masuk |
 | `data-kkn/` | Register peserta KKN — paginasi, saringan tahun ajaran, pencarian |
 | `kelompok/` | Kelompok KKN — tambah, ubah, hapus; pembimbing hanya dari dosen DPL |
@@ -95,8 +98,18 @@ celah XSS berarti sesi tercuri.** Karena itu:
 | `assets/js/nav.js` | Kepala halaman dan navigasi yang mengikuti peran |
 | `assets/js/laci.js` | Laci formulir: fokus dipindah masuk, Escape menutup, Tab terjebak di dalam |
 
-Halaman memanggil `getJSON`/`postJSON`/`deleteJSON` jscroot langsung, dengan
-`...tokenHeader()` di akhir. **Setiap fungsi jawaban harus mulai dengan
+**Halaman depan berdiri di luar semua ini.** Ia gelap, memakai `beranda.css`
+sendiri, tidak memuat `app.css`, tidak menyentuh jscroot, dan tidak memanggil
+API sama sekali. Token gelapnya sengaja tidak masuk `tailwind.config.js`, dan
+`index.html` + `beranda.js` dikecualikan dari pemindaian Tailwind — kalau tidak,
+kelas yang hanya dipakai halaman depan ikut menumpuk di `app.css`.
+
+Aturan `textContent` tetap berlaku penuh di sana: halaman depan satu origin
+dengan aplikasi yang memegang token, jadi `beranda.js` membangun accordion dan
+paragraf lewat `createElement`, bukan `innerHTML` seperti templat asalnya.
+
+Halaman aplikasi memanggil `getJSON`/`postJSON`/`deleteJSON` jscroot langsung,
+dengan `...tokenHeader()` di akhir. **Setiap fungsi jawaban harus mulai dengan
 `sehat(hasil, elPesan)`** — jscroot tidak menangani 401 maupun galat jaringan
 sendiri, jadi tanpa itu sesi yang habis tampak sebagai halaman kosong tanpa
 sebab. `uji/uji-jscroot.mjs` menjaganya.
