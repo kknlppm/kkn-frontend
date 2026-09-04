@@ -77,6 +77,18 @@ celah XSS berarti sesi tercuri.** Karena itu:
 4. Kelas Tailwind yang dirakit dinamis di JS harus di-*safelist* di
    `tailwind.config.js`, atau warnanya hilang dari `app.css`.
 
+## Repo dan penerbitan
+
+Repo ini **PUBLIK** dan bernama `kknlppm/kknlppm.github.io`. Keduanya wajib:
+GitHub Pages pada paket free tidak melayani repo privat, dan nama
+`<org>.github.io` membuatnya tersaji di akar `https://kknlppm.github.io/`.
+Di subpath, seluruh path absolut di situs ini (`/assets/…`, `/login/`) patah.
+
+Yang rahasia ada di `kkn-gocroot` — repo terpisah yang tetap privat.
+Tidak boleh ada rahasia apa pun di sini.
+
+`CNAME` sengaja belum dipasang; lihat `CATATAN-CNAME.md`.
+
 ## Susunan
 
 | | |
