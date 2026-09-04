@@ -15,10 +15,15 @@ const asal = (function () {
         // 8080 dipakai lingkungan uji aplikasi lama, jadi API baru di 8090.
         return "http://localhost:8090";
     }
-    // Cloud Functions gen2, asia-southeast2. Alamat ini lahir dari deploy
-    // 4 September 2026 dan melekat pada layanannya — ia berubah kalau
-    // fungsinya dihapus lalu dibuat ulang, bukan saat di-deploy ulang biasa.
-    return "https://kkn-gocroot-av3bgpgrxa-et.a.run.app";
+    // Alamat GCF, bukan alamat Cloud Run di baliknya.
+    //
+    // Bentuknya <region>-<proyek>.cloudfunctions.net/<nama>: seluruhnya
+    // ditentukan region, id proyek, dan nama fungsi. URL .run.app juga
+    // bekerja, tapi memuat hash yang lahir bersama layanannya dan berubah
+    // kalau fungsinya pernah dihapus lalu dibuat ulang — dan halaman ini
+    // di-deploy terpisah dari backend, jadi alamat yang bisa berubah
+    // diam-diam itu bahaya.
+    return "https://asia-southeast2-kkn-unfari.cloudfunctions.net/kkn-gocroot";
 })();
 
 export const backend = {
