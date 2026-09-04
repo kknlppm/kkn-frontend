@@ -158,16 +158,40 @@ body.nav-open .nav__mobile { display: block; }
 .hero__content .h1 { max-width: 700px; }
 .hero__content .lead { max-width: 460px; }
 .hero__aksi { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-.hero__mock { position: relative; z-index: 3; margin: 80px auto 0; max-width: 720px; padding: 0 24px; }
+.hero__mock { position: relative; z-index: 3; margin: 80px auto 0; max-width: 780px; padding: 0 24px; perspective: 1600px; }
+
+/* Cahaya di belakang sertifikat. Inilah yang membuat ia terbaca sebagai
+   benda yang melayang di atas bidang, bukan gambar yang ditempel. */
+.hero__cahaya {
+  position: absolute; inset: 6% 10% 24%; z-index: -1; border-radius: 50%;
+  background:
+    radial-gradient(60% 60% at 50% 45%, rgba(62, 155, 221, .55), transparent 70%),
+    radial-gradient(70% 50% at 30% 60%, rgba(16, 116, 186, .35), transparent 70%);
+  filter: blur(60px);
+  animation: berdenyut 12s ease-in-out infinite alternate;
+}
+@keyframes berdenyut {
+  0%   { transform: scale(1) translateY(0); opacity: .85; }
+  100% { transform: scale(1.12) translateY(-2%); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .hero__cahaya { animation: none; } }
 
 /* Sertifikat sebagai visual hero.
    Sengaja TERANG di halaman gelap: itu benda yang sungguh-sungguh
    dihasilkan aplikasi ini, dan warnanya diambil dari cetakan aslinya. */
 .sertifikat {
-  background: #fff; color: #0B1B2B; border-radius: 10px;
-  padding: 34px 38px 28px; text-align: center;
-  box-shadow: 0 40px 90px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.08);
+  background: #fff; color: #0B1B2B; border-radius: 12px;
+  padding: 40px 44px 32px; text-align: center;
   position: relative; overflow: hidden;
+  /* Dimiringkan sedikit pada sumbu X: cukup untuk terbaca sebagai lembaran
+     yang tergeletak di ruang, tidak cukup untuk menyulitkan membacanya. */
+  transform: rotateX(7deg);
+  transform-origin: 50% 100%;
+  box-shadow:
+    0 60px 120px rgba(0, 0, 0, .7),
+    0 20px 40px rgba(0, 0, 0, .5),
+    0 0 0 1px rgba(255, 255, 255, .1),
+    inset 0 1px 0 rgba(255, 255, 255, .9);
 }
 .sertifikat::before {
   content: ""; position: absolute; inset: 0 0 auto; height: 5px;
@@ -210,14 +234,34 @@ body.nav-open .nav__mobile { display: block; }
 .tabs button.is-active { color: var(--text); }
 
 .panggung {
-  position: relative; margin-top: 26px; min-height: 340px;
+  position: relative; margin-top: 26px; min-height: 460px;
   border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
-  background: linear-gradient(165deg, #0d141a, #141d26 55%, #1d2a35);
+}
+/* Latar bergambar, persis pola `feature-stage` Fora: kartu di atasnya baru
+   punya sesuatu untuk melayang di atasnya. Panel gradien rata tidak. */
+.panggung__latar {
+  position: absolute; inset: 0;
+  background:
+    url("/assets/img/beranda-bukit-lembut.webp") center bottom / cover no-repeat,
+    linear-gradient(180deg, #0e1319, #1b2630 60%, #33454f);
+}
+.panggung__latar::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,.2), rgba(0,0,0,.55));
 }
 .panggung__slide {
-  position: absolute; inset: 0; display: grid; align-content: center; gap: 16px;
-  padding: 48px 52px; opacity: 0; transform: translateY(18px) scale(.99);
-  transition: opacity .5s var(--ease), transform .5s var(--ease); pointer-events: none;
+  position: absolute; inset: 0; display: grid; place-items: center;
+  padding: 6%; opacity: 0; transform: translateY(20px) scale(.98);
+  transition: opacity .6s var(--ease), transform .6s var(--ease); pointer-events: none;
+}
+/* Kartu yang melayang di atas latar. Bayangannya yang mengerjakan kesan
+   kedalaman itu — bukan gradiennya. */
+.panggung__kartu {
+  width: 100%; max-width: 760px;
+  background: rgba(16, 20, 26, .82); backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,.12); border-radius: 16px;
+  padding: 38px 42px; display: grid; gap: 14px;
+  box-shadow: 0 30px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
 }
 .panggung__slide.is-active { opacity: 1; transform: none; pointer-events: auto; }
 .panggung__no { font-family: var(--font-data); font-size: 12px; color: var(--biru-terang); letter-spacing: .1em; }
@@ -232,6 +276,60 @@ body.nav-open .nav__mobile { display: block; }
 .panggung-nav p { font-size: 14px; color: var(--text-3); text-align: center; flex: 1; }
 .panggung-nav button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--text-2); transition: background .2s, color .2s; }
 .panggung-nav button:hover { background: rgba(255,255,255,.06); color: var(--text); }
+
+/* Tumpukan kartu ------------------------------------------------------- */
+/* Kartunya `sticky` dengan `top` bertingkat, jadi saat digulir ia menumpuk
+   satu di atas yang lain alih-alih lewat begitu saja. Itu gerak yang
+   mengerjakan kedalaman, bukan sekadar hiasan. */
+.tumpuk { display: flex; flex-direction: column; }
+.tumpuk__kartu {
+  position: sticky; top: 100px; display: grid; grid-template-columns: 1fr 1fr;
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden; min-height: 420px; margin-bottom: 24px;
+  box-shadow: 0 -10px 40px rgba(0,0,0,.6);
+}
+.tumpuk__kartu:nth-child(2) { top: 116px; }
+.tumpuk__kartu:nth-child(3) { top: 132px; }
+.tumpuk__teks { padding: 46px; display: flex; flex-direction: column; gap: 18px; }
+.tumpuk__teks .h3 { max-width: 340px; }
+.tumpuk__teks p { color: var(--text-2); font-size: 15px; max-width: 400px; }
+.tumpuk__kaki { margin-top: auto; display: flex; flex-wrap: wrap; gap: 8px; }
+.tumpuk__kaki span {
+  font-size: 12px; padding: 5px 11px; border-radius: 999px;
+  background: rgba(255,255,255,.06); color: var(--text-2); border: 1px solid var(--line);
+}
+.tumpuk__visual {
+  position: relative; overflow: hidden; display: grid; place-items: center; padding: 32px;
+  background: linear-gradient(180deg, #1a2430, #2b3d49 60%, #16202a);
+}
+.tumpuk__visual::before {
+  content: ""; position: absolute; inset: 0;
+  background: url("/assets/img/beranda-bukit-lembut.webp") center bottom / cover no-repeat;
+  opacity: .85;
+}
+.tumpuk__kartu--balik .tumpuk__visual { order: -1; }
+
+/* Cuplikan antarmuka yang melayang di dalam kartu visual. */
+.cuplik {
+  position: relative; z-index: 1; width: 100%; max-width: 380px;
+  background: rgba(12, 16, 21, .88); backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,.14); border-radius: 12px; padding: 16px 18px;
+  box-shadow: 0 24px 50px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.08);
+  font-size: 12px;
+}
+.cuplik__judul { font-family: var(--font-data); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); margin-bottom: 12px; }
+.cuplik__baris { display: grid; grid-template-columns: 62px 1fr auto; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid rgba(255,255,255,.07); }
+.cuplik__baris:first-of-type { border-top: 0; }
+.cuplik__nim { font-family: var(--font-data); color: var(--text-3); font-size: 11px; }
+.cuplik__nama { color: var(--text); }
+.cuplik__nilai { font-family: var(--font-data); color: var(--biru-terang); }
+.cuplik__kotak { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 4px; }
+.cuplik__kotak i {
+  display: grid; place-items: center; height: 30px; border-radius: 6px;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  font-family: var(--font-data); font-size: 11px; color: var(--text-2); font-style: normal;
+}
+.cuplik__kotak i.on { background: rgba(62,155,221,.18); border-color: rgba(62,155,221,.4); color: #fff; }
 
 /* Pengumuman ----------------------------------------------------------- */
 .pengumuman {
@@ -304,9 +402,12 @@ body.nav-open .nav__mobile { display: block; }
 .cta { position: relative; overflow: hidden; padding: 160px 0 140px; text-align: center; }
 .cta__bg { position: absolute; inset: 0; background: linear-gradient(180deg, #000 0%, #0b1015 40%, #16202a 70%, #24333f 100%); }
 .cta__dunes { position: absolute; left: 0; right: 0; bottom: 0; height: 55%; background: url("/assets/img/beranda-punggung.webp") center bottom / cover no-repeat; opacity: .4; }
-.cta .container { position: relative; display: flex; flex-direction: column; align-items: center; gap: 22px; }
-.cta .h1 { max-width: 620px; }
-.cta p { color: var(--text-2); max-width: 440px; }
+.cta .container { position: relative; display: grid; grid-template-columns: 420px 1fr; gap: 48px; align-items: center; text-align: left; }
+.cta__teks { display: flex; flex-direction: column; gap: 20px; align-items: flex-start; }
+.cta__mock { position: relative; perspective: 1400px; }
+.cta__mock .sertifikat { transform: rotateX(6deg) rotateY(-8deg); max-width: 520px; }
+.cta .h1 { max-width: 420px; }
+.cta p { color: var(--text-2); max-width: 380px; }
 
 /* Kaki ----------------------------------------------------------------- */
 .footer { background: #000; padding: 64px 0 34px; border-top: 1px solid var(--line); }
@@ -348,6 +449,15 @@ body.nav-open .nav__mobile { display: block; }
   .pengumuman { grid-template-columns: 1fr; padding: 30px 26px; }
   .pengumuman__angka { text-align: left; }
   .berita-grid { grid-template-columns: 1fr; }
+  .tumpuk__kartu { grid-template-columns: 1fr; position: relative; top: 0 !important; min-height: 0; }
+  .tumpuk__kartu--balik .tumpuk__visual { order: 0; }
+  .tumpuk__teks { padding: 30px 26px; }
+  .tumpuk__visual { min-height: 260px; padding: 24px; }
+  .panggung { min-height: 420px; }
+  .panggung__kartu { padding: 26px 22px; }
+  .cta .container { grid-template-columns: 1fr; text-align: center; }
+  .cta__teks { align-items: center; }
+  .cta__mock { display: none; }
   .faq { grid-template-columns: 1fr; }
   .footer__grid { grid-template-columns: 1fr 1fr; }
   .cta { padding: 110px 0 96px; }
