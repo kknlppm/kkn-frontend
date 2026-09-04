@@ -83,7 +83,7 @@ celah XSS berarti sesi tercuri.** Karena itu:
 | `index.html` | **Halaman depan publik — GELAP.** Tampil untuk semua, termasuk yang sudah punya sesi |
 | `assets/css/beranda.css` | Gaya halaman depan. **Bukan Tailwind, bukan hasil build — ditulis tangan dan di-commit** |
 | `assets/js/beranda.js` | Perilaku halaman depan. Tidak memanggil API sama sekali |
-| `assets/img/` | Latar halaman depan. Lihat `SUMBER.md` di dalamnya — keduanya masih placeholder |
+| `assets/img/` | Latar halaman depan: bentang bukit dan gurun dari Fora, dipakai apa adanya. Keluaran program, bukan foto — lihat `SUMBER.md` |
 | `login/` | Halaman masuk |
 | `data-kkn/` | Register peserta KKN — paginasi, saringan tahun ajaran, pencarian |
 | `kelompok/` | Kelompok KKN — tambah, ubah, hapus; pembimbing hanya dari dosen DPL |
