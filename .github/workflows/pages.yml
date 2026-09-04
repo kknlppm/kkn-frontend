@@ -1,14 +1,12 @@
 # Deploy situs statis ke GitHub Pages.
 #
-# BELUM AKTIF. Ditulis supaya siap, bukan supaya jalan — seluruh pekerjaan
-# berlangsung di lokal dan aplikasi live tidak disentuh.
+# AKTIF sejak 4 September 2026, TAPI ke alamat bawaan GitHub — bukan ke
+# kknlppm.unfari.ac.id.
 #
-# Sebelum menyalakannya:
-#   - CNAME menunjuk domain yang DNS-nya benar-benar sudah diarahkan
-#   - assets/js/api.js sudah memuat URL Cloud Function yang sebenarnya
-#   - izin institusi atas data mahasiswa di Google Cloud
+# Domain itu masih melayani aplikasi KKN lama yang hidup, jadi CNAME sengaja
+# belum dipasang; lihat CATATAN-CNAME.md untuk urutan pemindahannya.
 #
-# Untuk menyalakan: hapus baris `if: false`.
+# assets/js/config.js sudah memuat alamat GCF yang sebenarnya.
 
 name: Deploy ke GitHub Pages
 
@@ -28,7 +26,6 @@ concurrency:
 
 jobs:
   deploy:
-    if: false # ← BELUM AKTIF. Lihat catatan di atas.
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
