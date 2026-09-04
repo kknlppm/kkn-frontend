@@ -215,6 +215,74 @@ body.nav-open .nav__mobile { display: block; }
 .deret--gelap i { background: var(--biru-terang); }
 .deret--gelap i[data-kosong] { background: rgba(255,255,255,.2); }
 
+
+/* Jendela aplikasi ------------------------------------------------------
+   Padanan `.app` Fora, dan inilah tulang punggung kesan berdimensinya:
+   kaca buram, bayangan yang menyembur ke atas, garis sorot di tepi atas, dan
+   aurora yang bergerak pelan di baliknya. Dipakai di tiga tempat — hero,
+   panggung tahapan, dan ajakan penutup — persis seperti Fora memakainya. */
+.jendela {
+  display: grid; grid-template-columns: 210px 1fr; min-height: 460px;
+  background: rgba(20, 20, 20, .86);
+  border: 1px solid rgba(255,255,255,.1); border-bottom: 0;
+  border-radius: 20px 20px 0 0; overflow: hidden;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 -20px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.jendela--kartu { border-bottom: 1px solid rgba(255,255,255,.1); border-radius: 20px; }
+.jendela__sisi { padding: 18px; border-right: 1px solid rgba(255,255,255,.06); }
+.jendela__merek { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; margin-bottom: 20px; }
+.jendela__merek b { width: 18px; height: 18px; border-radius: 5px; background: var(--biru); display: grid; place-items: center; font-size: 9px; font-family: var(--font-data); }
+.jendela__nav li { display: flex; align-items: center; gap: 9px; padding: 7px 4px; font-size: 13px; color: var(--text-3); }
+.jendela__nav li::before { content: ""; width: 13px; height: 13px; border-radius: 3px; background: rgba(255,255,255,.14); flex: none; }
+.jendela__nav li.on { color: var(--text); }
+.jendela__nav li.on::before { background: var(--biru-terang); }
+.jendela__utama { position: relative; overflow: hidden; }
+
+/* Aurora — sama perannya dengan .app__aurora Fora, warnanya diambil dari
+   biru sertifikat supaya tetap satu lembaga. */
+.aurora {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(70% 60% at 80% 25%, rgba(190, 224, 245, .85), transparent 60%),
+    radial-gradient(60% 70% at 25% 30%, rgba(7, 59, 97, .9), transparent 60%),
+    radial-gradient(50% 50% at 55% 85%, rgba(16, 116, 186, .8), transparent 60%),
+    linear-gradient(135deg, #07222f, #10557f 45%, #bcdcf0 100%);
+  animation: aurora 14s ease-in-out infinite alternate;
+  filter: saturate(.95);
+}
+@keyframes aurora {
+  0%   { transform: scale(1.05) translate(0, 0); }
+  50%  { transform: scale(1.15) translate(-3%, 2%); }
+  100% { transform: scale(1.08) translate(2%, -3%); }
+}
+@media (prefers-reduced-motion: reduce) { .aurora { animation: none; } }
+
+/* Isi di atas aurora, dalam panel kaca. */
+.jendela__isi { position: relative; z-index: 1; padding: 26px; display: grid; gap: 14px; align-content: center; height: 100%; }
+.kaca {
+  background: rgba(12, 16, 21, .62); backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.16); border-radius: 14px; padding: 18px 20px;
+  box-shadow: 0 20px 45px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.1);
+}
+.kaca__judul { font-family: var(--font-data); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.6); margin-bottom: 12px; }
+.kaca__baris { display: grid; grid-template-columns: 60px 1fr auto; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid rgba(255,255,255,.08); font-size: 12px; }
+.kaca__baris:first-of-type { border-top: 0; }
+.kaca__nim { font-family: var(--font-data); color: rgba(255,255,255,.55); font-size: 11px; }
+.kaca__nama { color: #fff; }
+.kaca__nilai { font-family: var(--font-data); color: #cfe8fb; }
+
+/* Lencana bulat berpermukaan, padanan .ov__ava Fora yang memakai conic. */
+.kaca__bulat {
+  width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 12px;
+  background: conic-gradient(from 200deg, #3E9BDD, #bcdcf0, #1074BA, #3E9BDD);
+  filter: blur(.4px); box-shadow: 0 10px 30px rgba(0,0,0,.45);
+}
+.kaca--tengah { text-align: center; }
+.kaca--tengah b { display: block; font-size: 16px; font-weight: 600; color: #fff; }
+.kaca--tengah small { color: rgba(255,255,255,.72); font-size: 12px; }
+.kaca__tombol { margin-top: 14px; height: 40px; border-radius: 10px; background: #eee; color: #111; font-weight: 500; font-size: 13px; display: grid; place-items: center; }
+
 /* Intro ---------------------------------------------------------------- */
 .intro { padding: 150px 0 110px; }
 .intro p { font-size: clamp(21px, 2.7vw, 29px); line-height: 1.42; letter-spacing: -0.02em; max-width: 730px; margin: 28px 0 0; color: var(--text-3); }
@@ -234,8 +302,9 @@ body.nav-open .nav__mobile { display: block; }
 .tabs button.is-active { color: var(--text); }
 
 .panggung {
-  position: relative; margin-top: 26px; min-height: 460px;
+  position: relative; margin-top: 26px; min-height: 560px;
   border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+  box-shadow: 0 40px 90px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
 }
 /* Latar bergambar, persis pola `feature-stage` Fora: kartu di atasnya baru
    punya sesuatu untuk melayang di atasnya. Panel gradien rata tidak. */
@@ -250,19 +319,30 @@ body.nav-open .nav__mobile { display: block; }
   background: linear-gradient(180deg, rgba(0,0,0,.2), rgba(0,0,0,.55));
 }
 .panggung__slide {
-  position: absolute; inset: 0; display: grid; place-items: center;
-  padding: 6%; opacity: 0; transform: translateY(20px) scale(.98);
+  position: absolute; inset: 0; display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  align-items: center; gap: 34px; padding: 5% 5.5%;
+  opacity: 0; transform: translateY(20px) scale(.98);
   transition: opacity .6s var(--ease), transform .6s var(--ease); pointer-events: none;
 }
 /* Kartu yang melayang di atas latar. Bayangannya yang mengerjakan kesan
    kedalaman itu — bukan gradiennya. */
 .panggung__kartu {
-  width: 100%; max-width: 760px;
-  background: rgba(16, 20, 26, .82); backdrop-filter: blur(20px);
+  background: rgba(16, 20, 26, .78); backdrop-filter: blur(20px);
   border: 1px solid rgba(255,255,255,.12); border-radius: 16px;
-  padding: 38px 42px; display: grid; gap: 14px;
+  padding: 28px 30px; display: grid; gap: 12px;
   box-shadow: 0 30px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
 }
+.panggung__judul { font-size: 24px; }
+.panggung__teks { font-size: 14px; }
+.panggung__slide .jendela {
+  width: 100%; min-height: 320px; grid-template-columns: 150px 1fr;
+  border-radius: 14px; border-bottom: 1px solid var(--line);
+  box-shadow: 0 30px 60px rgba(0,0,0,.5);
+}
+.panggung__slide .jendela__sisi { padding: 14px; }
+.panggung__slide .jendela__nav li { font-size: 11px; padding: 5px 4px; }
+.panggung__slide .jendela__isi { padding: 20px; }
 .panggung__slide.is-active { opacity: 1; transform: none; pointer-events: auto; }
 .panggung__no { font-family: var(--font-data); font-size: 12px; color: var(--biru-terang); letter-spacing: .1em; }
 .panggung__judul { font-size: 27px; letter-spacing: -.02em; }
@@ -349,11 +429,18 @@ body.nav-open .nav__mobile { display: block; }
 .pos { border: 1px solid var(--line); background: var(--bg-2); border-radius: var(--radius); padding: 8px; display: flex; flex-direction: column; transition: border-color .3s, transform .3s var(--ease); }
 .pos:hover { border-color: var(--line-2); transform: translateY(-3px); }
 .pos__gbr { aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden; background: #111; position: relative; }
-.pos__gbr > div { position: absolute; inset: 0; transition: transform .8s var(--ease); background-size: cover; background-position: center; }
+.pos__gbr > div { position: absolute; inset: 0; overflow: hidden; transition: transform .8s var(--ease); background-size: cover; background-position: center; }
 .pos:hover .pos__gbr > div { transform: scale(1.04); }
 .pos__tanpa-foto {
-  background: linear-gradient(160deg, #16212b, #0b1116);
+  background: radial-gradient(60% 55% at 50% 40%, #24384a, #14202b 55%, #0b1116 85%);
   display: grid; align-items: end; padding: 22px 20px;
+}
+.pos__tanpa-foto::after {
+  content: ""; position: absolute; left: 50%; top: 38%; width: 30%; aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(-8deg); border-radius: 18%;
+  background: linear-gradient(135deg, #cfe0ee, #7d9db4 50%, #3c576d);
+  box-shadow: 0 24px 50px rgba(0,0,0,.6);
+  opacity: .55;
 }
 .pos__tanpa-foto p {
   font-size: 15px; line-height: 1.5; color: var(--text-3);
@@ -455,6 +542,10 @@ body.nav-open .nav__mobile { display: block; }
   .tumpuk__visual { min-height: 260px; padding: 24px; }
   .panggung { min-height: 420px; }
   .panggung__kartu { padding: 26px 22px; }
+  .jendela, .panggung__slide .jendela { grid-template-columns: 1fr; min-height: 0; }
+  .jendela__sisi { display: none; }
+  .panggung { min-height: 620px; }
+  .panggung__slide { grid-template-columns: 1fr; gap: 18px; align-content: center; }
   .cta .container { grid-template-columns: 1fr; text-align: center; }
   .cta__teks { align-items: center; }
   .cta__mock { display: none; }
