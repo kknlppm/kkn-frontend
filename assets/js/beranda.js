@@ -158,9 +158,10 @@ const TANYA = [
      ["Pindai kode QR yang tercetak di sertifikat. Ia langsung membuka halaman " +
       "verifikasi dan menampilkan nama, NIM, program studi, nomor sertifikat, " +
       "dan tanggal terbitnya.",
-      "Kalau QR-nya rusak atau tidak terbaca, buka halaman Verifikasi dari " +
-      "menu di atas dan masukkan token yang tercetak di bawah QR. Verifikasi " +
-      "terbuka untuk umum dan tidak memerlukan akun."]],
+      "Verifikasi terbuka untuk umum dan tidak memerlukan akun \u2014 pemindai " +
+      "tidak perlu punya hubungan apa pun dengan kampus.",
+      "Kalau kode QR-nya rusak, sobek, atau tercetak terlalu buram untuk " +
+      "dipindai, hubungi LPPM."]],
 
     ["Apakah nilai saya terlihat oleh mahasiswa lain?",
      ["Tidak. Halaman verifikasi sertifikat yang terbuka untuk umum hanya " +

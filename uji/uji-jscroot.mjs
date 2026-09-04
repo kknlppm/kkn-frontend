@@ -212,10 +212,15 @@ for (const jalur of terlindungi) {
     const judulTahap = await page.textContent(".panggung__slide.is-active .panggung__judul");
     lapor(/Penilaian/i.test(judulTahap || ""), `tab keempat membuka panel yang benar ("${judulTahap}")`);
 
-    // Kedua pintu keluar halaman depan harus benar.
+    // Satu-satunya pintu keluar halaman depan adalah Masuk.
     const masuk = await page.locator('a[href="/login/"]').count();
-    const verif = await page.locator('a[href="/verifikasi/"]').count();
-    lapor(masuk > 0 && verif > 0, `tautan Masuk (${masuk}) dan Verifikasi (${verif}) ada`);
+    lapor(masuk > 0, `tautan Masuk ada (${masuk})`);
+
+    // Verifikasi sengaja TIDAK ditautkan dari mana pun: halamannya tidak punya
+    // medan isian token, jadi tautan ke sana selalu berakhir di "Sertifikat
+    // tidak ditemukan". Jalannya cuma satu — pindai QR.
+    const verif = await page.locator('a[href^="/verifikasi/"]').count();
+    lapor(verif === 0, `tidak ada tautan Verifikasi di halaman depan (${verif})`);
 
     await ctx.close();
 }

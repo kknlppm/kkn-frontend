@@ -91,7 +91,7 @@ celah XSS berarti sesi tercuri.** Karena itu:
 | `penilaian/` | Penilaian lima aspek per kelompok, tersimpan saat pindah kotak |
 | `sertifikat/` | Menerbitkan sertifikat dan membuka PDF-nya |
 | `data-induk/` | Program studi, dosen, mata kuliah, pengguna |
-| `verifikasi/` | Verifikasi publik, tanpa login |
+| `verifikasi/` | Verifikasi publik, tanpa login. **Sengaja tidak ditautkan dari mana pun** — halaman ini tidak punya medan isian token, jadi ia hanya berarti kalau dibuka lewat pindai QR |
 | `berita/` | **Halaman baca satu berita — GELAP, publik.** `/berita/?slug=…`; bentuk `/berita/<slug>` dialihkan `404.html` |
 | `kelola-berita/` | Menulis dan menerbitkan berita. **Admin saja**, dan itu ditegakkan backend |
 | `assets/js/jscroot/` | **Pustaka jscroot v0.2.8, di-*vendor*.** Jangan disunting — lihat `VERSI.md` di dalamnya |
