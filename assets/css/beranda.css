@@ -512,13 +512,34 @@ body.nav-open .nav__mobile { display: block; }
    tepi kanannya keluar bidang seperti di Fora. Auroranya dimatikan — di sini
    yang menyala latarnya, bukan layarnya. */
 .cta__mock { justify-self: start; width: 840px; max-width: none; }
-.cta__mock .jendela { min-height: 520px; background: rgba(12, 12, 12, .55); }
+
+/* Tembus pandang, dan itu intinya: punggung bukit di belakangnya harus
+   TERLIHAT menembus sidebar dan badan layar. Kalau jendelanya pekat, ia cuma
+   kotak yang ditempel — bukan lapisan. */
+.cta__mock .jendela { min-height: 520px; background: rgba(12, 12, 12, .55); backdrop-filter: none; }
+.cta__mock .jendela__sisi { border-right-color: rgba(255,255,255,.1); }
 .cta__mock .aurora { display: none; }
 .cta__mock .jendela__utama { background: linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.05)); }
-.cta__mock .jendela__isi { padding-top: 150px; }
-/* Jendelanya sengaja meluber keluar bidang, tapi isinya tidak boleh ikut
-   terpotong — dibatasi dan dipusatkan di dalam kolomnya. */
-.cta__mock .kaca { max-width: 420px; margin: 0 auto; }
+
+/* Isinya telanjang di atas permukaan itu — tanpa kartu berbingkai. */
+.cta__mock .jendela__isi { padding: 150px 40px 40px; align-content: start; justify-items: center; text-align: center; gap: 8px; }
+.ringkas__bulat {
+  width: 46px; height: 46px; border-radius: 50%; background: #fff; color: #111;
+  display: grid; place-items: center; font-weight: 600; font-size: 15px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.35);
+}
+.ringkas__judul { font-weight: 600; font-size: 16px; color: #fff; }
+.ringkas__meta { display: flex; align-items: center; gap: 8px; font-size: 14px; color: rgba(255,255,255,.85); }
+.ringkas__titik { display: flex; }
+.ringkas__titik i { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(20,20,20,.9); margin-left: -6px; background: linear-gradient(135deg, #3E9BDD, #073B61); }
+.ringkas__titik i:first-child { margin-left: 0; }
+.ringkas__titik i:nth-child(2) { background: linear-gradient(135deg, #bcdcf0, #1074BA); }
+.ringkas__titik i:nth-child(3) { background: linear-gradient(135deg, #7fb6dd, #0d4a75); }
+.ringkas__tombol {
+  margin-top: 12px; width: 100%; max-width: 420px; height: 44px; border-radius: 999px;
+  background: #e6e6e6; color: #111; font-weight: 500; display: grid; place-items: center;
+}
+.ringkas__ket { max-width: 420px; text-align: left; font-size: 13px; color: rgba(255,255,255,.85); line-height: 1.5; margin-top: 10px; }
 
 /* Kaki ----------------------------------------------------------------- */
 .footer { background: #000; padding: 64px 0 34px; border-top: 1px solid var(--line); }
@@ -576,7 +597,7 @@ body.nav-open .nav__mobile { display: block; }
   .cta__teks .h1, .cta__teks p { max-width: none; }
   .cta__mock { width: 100%; justify-self: stretch; }
   .cta__mock .jendela { min-height: 340px; }
-  .cta__mock .jendela__isi { padding-top: 28px; }
+  .cta__mock .jendela__isi { padding: 28px 22px 32px; }
   .faq { grid-template-columns: 1fr; }
   .footer__grid { grid-template-columns: 1fr 1fr; }
   .cta { padding: 110px 0 96px; }
