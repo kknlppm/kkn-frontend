@@ -231,9 +231,11 @@
       </p>
     </div>
 
-    <!-- Kerangka Tahap B. Bagian ini akan membaca GET /news; kartunya
-         digambar lewat textContent, bukan innerHTML. Sampai itu ada, keadaan
-         kosong inilah yang tampil — dan ia harus tetap masuk akal dibaca. -->
+    <!-- Diisi beranda.js dari GET /news. Kartunya digambar lewat
+         createElement + textContent, bukan innerHTML: judul dan ringkasannya
+         diketik admin, dan halaman ini satu origin dengan aplikasi yang
+         menyimpan token. Kalau API diam, keadaan kosong di bawahnya yang
+         tampil dan sisa halaman tetap utuh. -->
     <div class="berita-grid" id="daftarBerita" hidden></div>
     <div class="berita-kosong" id="beritaKosong" data-reveal>
       <b>Belum ada berita yang dipasang</b>

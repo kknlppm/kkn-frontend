@@ -53,6 +53,18 @@ export const backend = {
         gradesCourseList: asal + "/api/grades/course/list",
     },
 
+    // Berita. `daftar` dan `satuPublik` sengaja TANPA autentikasi — halaman
+    // depan publik membacanya, dan tidak ada pengunjung yang punya token.
+    // Rute kelola ada di jalur berbeda (`/api/news`), bukan jalur yang sama
+    // dengan perilaku berbeda: jalur yang berbeda lebih sulit tertukar.
+    news: {
+        daftar: asal + "/news",
+        satuPublik: (slug) => asal + "/news/" + slug,
+        kelola: asal + "/api/news",
+        satu: (idnya) => asal + "/api/news/" + idnya,
+        unggahFoto: asal + "/api/news/image",
+    },
+
     // Sertifikat. `verify` sengaja tanpa autentikasi — siapa pun yang
     // memegang sertifikat harus bisa memeriksanya, itu gunanya QR di sana.
     certificate: {

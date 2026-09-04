@@ -52,6 +52,12 @@ body {
   overflow-x: hidden;
 }
 a { color: inherit; text-decoration: none; }
+
+/* Atribut `hidden` harus MENANG atas aturan display apa pun di berkas ini.
+   Tanpa !important, `.artikel__tautan { display:inline-block }` mengalahkan
+   `[hidden]` bawaan peramban — dan tautan yang seharusnya tersembunyi tetap
+   tergambar. Ditemukan uji, bukan dengan membaca. */
+[hidden] { display: none !important; }
 img, svg, video { display: block; max-width: 100%; }
 button, input, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; background: none; border: 0; padding: 0; }
@@ -247,6 +253,14 @@ body.nav-open .nav__mobile { display: block; }
 .pos__gbr { aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden; background: #111; position: relative; }
 .pos__gbr > div { position: absolute; inset: 0; transition: transform .8s var(--ease); background-size: cover; background-position: center; }
 .pos:hover .pos__gbr > div { transform: scale(1.04); }
+.pos__tanpa-foto {
+  background: linear-gradient(160deg, #16212b, #0b1116);
+  display: grid; align-items: end; padding: 22px 20px;
+}
+.pos__tanpa-foto p {
+  font-size: 15px; line-height: 1.5; color: var(--text-3);
+  display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden;
+}
 .pos__isi { padding: 26px 24px 22px; display: flex; flex-direction: column; gap: 22px; flex: 1; }
 .pos__judul { font-size: 21px; font-weight: 400; letter-spacing: -0.02em; line-height: 1.35; }
 .pos__meta { margin-top: auto; font-size: 13px; color: var(--text-3); display: flex; gap: 10px; }
@@ -256,6 +270,21 @@ body.nav-open .nav__mobile { display: block; }
   padding: 64px 32px; text-align: center; color: var(--text-3);
 }
 .berita-kosong b { display: block; color: var(--text-2); font-weight: 400; font-size: 17px; margin-bottom: 6px; }
+
+/* Halaman baca satu berita ---------------------------------------------- */
+.artikel { padding: 130px 0 90px; }
+.artikel__kembali { display: inline-block; margin-bottom: 32px; color: var(--text-3); font-size: 14px; transition: color .2s; }
+.artikel__kembali:hover { color: var(--text); }
+.artikel__judul { font-size: clamp(30px, 4vw, 46px); font-weight: 400; line-height: 1.12; letter-spacing: -.03em; max-width: 800px; }
+.artikel__meta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 18px; font-size: 14px; color: var(--text-3); }
+.artikel__ringkas { margin-top: 26px; font-size: 19px; line-height: 1.5; color: var(--text-2); max-width: 720px; }
+.artikel__isi { margin-top: 40px; max-width: 720px; }
+.artikel__isi p { font-size: 17px; line-height: 1.7; color: var(--text-2); margin-bottom: 22px; }
+.artikel__foto { margin: 40px 0; display: grid; gap: 14px; }
+.artikel__foto img { width: 100%; border-radius: var(--radius); border: 1px solid var(--line); background: #111; }
+.artikel__tautan { display: inline-block; margin-top: 8px; }
+.artikel__pesan { padding: 80px 0; text-align: center; color: var(--text-3); }
+.artikel__pesan b { display: block; color: var(--text-2); font-weight: 400; font-size: 20px; margin-bottom: 8px; }
 
 /* FAQ ------------------------------------------------------------------ */
 .faq { display: grid; grid-template-columns: 300px 1fr; gap: 40px; align-items: start; }

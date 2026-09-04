@@ -17,8 +17,14 @@
 //      memanggil API sama sekali, dan modulnya benar-benar berjalan.
 //   8. Halaman depan tetap tampil untuk yang sudah punya sesi — itu keputusan
 //      pemilik, dan gampang tergerus kalau nanti ada yang memasang penjaga.
-//   9. Rantai QR `/verifikasi/<token>` -> 404.html -> `?token=` masih utuh.
-//      Bentuk jalur itu tercetak di 140+ sertifikat dan tidak bisa diubah.
+//   9. Rantai QR `/verifikasi/<token>` -> 404.html -> `?token=` masih utuh,
+//      dan alamat berita `/berita/<slug>` ikut lewat jalur yang sama tanpa
+//      merusaknya. Bentuk jalur QR tercetak di 140+ sertifikat.
+//  10. Berita: kartunya digambar dari /news, judul ber-HTML tetap teks, dan
+//      tautan `javascript:` tidak pernah jadi href.
+//  11. API berita mati TIDAK merusak sisa halaman depan — jscroot menelan
+//      galat jaringan tanpa memanggil callback, jadi ini gampang lolos dari
+//      perhatian sampai ada yang membuka situs saat backend sedang mati.
 //
 // Backend TIDAK perlu hidup: jawabannya dipalsukan lewat page.route, jadi uji
 // ini bisa dijalankan sendirian.
@@ -170,14 +176,28 @@ for (const jalur of terlindungi) {
 // ---------- 7. Halaman depan publik ----------
 {
     const { ctx, page, galat } = await halamanBaru(false);
-    let apiDipanggil = 0;
-    await page.route("**/localhost:8090/**", (r) => { apiDipanggil++; return r.abort(); });
+    const dipanggil = [];
+    await page.route("**/localhost:8090/**", (r) => {
+        dipanggil.push(new URL(r.request().url()).pathname);
+        return r.fulfill({ status: 200, contentType: "application/json",
+            body: JSON.stringify(amplop([], { total: 0, page: 1, total_pages: 1 })) });
+    });
     await page.goto(B + "/", { waitUntil: "networkidle" });
+    await page.waitForTimeout(300);
 
     lapor(new URL(page.url()).pathname === "/", `halaman depan tidak mengalihkan (${page.url()})`);
-    lapor(galat.length === 0, "halaman depan memuat tanpa galat" +
-        (galat.length ? "\n    " + galat.join("\n    ") : ""));
-    lapor(apiDipanggil === 0, `halaman depan tidak memanggil API sama sekali (${apiDipanggil} panggilan)`);
+    // Galat CORS/jaringan dari /news tidak dihitung: ia diuji tersendiri di
+    // bagian 11, dan di sini yang dijaga adalah halamannya sendiri.
+    const galatNyata = galat.filter((g) => !/\/news/.test(g));
+    lapor(galatNyata.length === 0, "halaman depan memuat tanpa galat" +
+        (galatNyata.length ? "\n    " + galatNyata.join("\n    ") : ""));
+
+    // Dulu di sini tertulis "tidak memanggil API sama sekali" — benar untuk
+    // Tahap A, dan salah begitu berita lahir. Yang sebenarnya dijaga: halaman
+    // PUBLIK tidak boleh menyentuh satu pun rute yang butuh token.
+    const berkewenangan = dipanggil.filter((j) => j.startsWith("/api/"));
+    lapor(berkewenangan.length === 0,
+        `halaman depan tidak memanggil rute ber-token (${JSON.stringify(dipanggil)})`);
 
     // Modulnya benar-benar berjalan, bukan sekadar tidak melempar galat.
     const faq = await page.locator("#daftarFaq .acc").count();
@@ -258,8 +278,103 @@ for (const jalur of terlindungi) {
     const teks = await page.textContent("#hasil");
     lapor(/Contoh Peserta/.test(teks || ""), "hasil verifikasi tergambar dari rantai QR");
 
+    // Alamat berita lewat jalur yang sama. Diuji BERSAMA rantai QR, bukan
+    // terpisah: yang berbahaya bukan aturan barunya sendiri, melainkan
+    // kemungkinan ia menyerobot jalur sertifikat.
+    await page.route("**/localhost:8090/news/**", (r) => r.fulfill({ status: 200,
+        contentType: "application/json", body: JSON.stringify(amplop(
+            { slug: "penutupan-kkn", judul: "Penutupan KKN", paragraf: ["Isi."], foto_url: [] })) }));
+    await page.goto("http://localhost:5174/berita/penutupan-kkn", { waitUntil: "networkidle" });
+    lapor(page.url().includes("/berita/?slug=penutupan-kkn"),
+        `alamat berita bentuk jalur dialihkan (${page.url()})`);
+    lapor(/Penutupan KKN/.test(await page.textContent("#judul") || ""),
+        "…dan artikelnya tergambar");
+
     await ctx.close();
     await new Promise((r) => pages.close(r));
+}
+
+// ---------- 10. Berita di halaman depan ----------
+const BERITA = [
+    { id: "n1", slug: "penutupan-kkn", judul: "Penutupan KKN Angkatan XII",
+      ringkasan: "Ditutup di balai desa.", paragraf: ["Satu.", "Dua."],
+      foto_url: [], penulis: "LPPM Unfari", terbit: true,
+      tanggal_terbit: "2026-08-30T02:00:00Z" },
+    { id: "n2", slug: "uji-xss", judul: '<img src=x onerror="window.__XSS=1">',
+      ringkasan: "", paragraf: ['<script>window.__XSS=1</script> isi'],
+      foto_url: [], terbit: true, tanggal_terbit: "2026-08-20T02:00:00Z",
+      tautan_url: "javascript:window.__XSS=1", tautan_label: "Jangan diklik" },
+];
+
+{
+    const { ctx, page, galat } = await halamanBaru(false);
+    await page.route("**/localhost:8090/news**", (r) => r.fulfill({ status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(amplop(BERITA, { total: 2, page: 1, total_pages: 1 })) }));
+    await page.goto(B + "/", { waitUntil: "networkidle" });
+    await page.waitForTimeout(400);
+
+    const kartu = await page.locator("#daftarBerita .pos").count();
+    lapor(kartu === 2, `halaman depan menggambar kartu berita (${kartu})`);
+    lapor(await page.locator("#beritaKosong").isHidden(), "keadaan kosong disembunyikan");
+
+    const img = await page.locator("#daftarBerita img").count();
+    const xss = await page.evaluate(() => window.__XSS === 1);
+    lapor(img === 0 && !xss, `judul berita ber-HTML tidak ditafsirkan (img=${img}, xss=${xss})`);
+    lapor(/<img src=x/.test(await page.textContent("#daftarBerita") || ""),
+        "…dan tampil sebagai teks apa adanya");
+    lapor(galat.length === 0, "bagian berita tanpa galat" +
+        (galat.length ? "\n    " + galat.join("\n    ") : ""));
+    await ctx.close();
+}
+
+// ---------- 11. API berita mati: sisa halaman depan tetap utuh ----------
+{
+    const { ctx, page } = await halamanBaru(false);
+    await page.route("**/localhost:8090/news**", (r) => r.abort());
+    await page.goto(B + "/", { waitUntil: "networkidle" });
+    await page.waitForTimeout(400);
+    lapor(await page.locator("#daftarBerita").isHidden(), "berita gagal: kartunya tidak digambar");
+    lapor(await page.locator("#daftarFaq .acc").count() >= 5, "…dan tanya jawab tetap ada");
+    lapor(await page.locator(".hero__content .h1").count() === 1, "…dan hero tetap ada");
+    await ctx.close();
+}
+
+// ---------- 12. Halaman baca satu berita ----------
+{
+    const { ctx, page, galat } = await halamanBaru(false);
+    await page.route("**/localhost:8090/news/**", (r) => r.fulfill({ status: 200,
+        contentType: "application/json", body: JSON.stringify(amplop(BERITA[1])) }));
+    await page.goto(B + "/berita/?slug=uji-xss", { waitUntil: "networkidle" });
+    await page.waitForTimeout(400);
+
+    const img = await page.locator("#artikel img").count();
+    const scr = await page.locator("#isi script").count();
+    const xss = await page.evaluate(() => window.__XSS === 1);
+    lapor(img === 0 && scr === 0 && !xss,
+        `halaman baca tidak menafsirkan HTML (img=${img}, script=${scr}, xss=${xss})`);
+
+    // Skema tautan sudah ditolak server; ini penjaga kedua, untuk data yang
+    // sempat tersimpan sebelum penjaga pertama ada.
+    const tautan = await page.locator("#tautan").count();
+    const terlihat = tautan ? await page.locator("#tautan").isVisible() : false;
+    lapor(!terlihat, "tautan javascript: tidak dipasang sebagai href");
+    lapor(galat.length === 0, "halaman baca tanpa galat" +
+        (galat.length ? "\n    " + galat.join("\n    ") : ""));
+    await ctx.close();
+}
+
+// ---------- 13. Slug tak dikenal diberi pesan, bukan halaman kosong ----------
+{
+    const { ctx, page } = await halamanBaru(false);
+    await page.route("**/localhost:8090/news/**", (r) => r.fulfill({ status: 404,
+        contentType: "application/json",
+        body: JSON.stringify({ status: "error", message: "berita tidak ditemukan" }) }));
+    await page.goto(B + "/berita/?slug=entah-apa", { waitUntil: "networkidle" });
+    await page.waitForTimeout(300);
+    lapor(/tidak ditemukan/i.test(await page.textContent("#memuat") || ""),
+        "slug tak dikenal diberi pesan");
+    await ctx.close();
 }
 
 await browser.close();

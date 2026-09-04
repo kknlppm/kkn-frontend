@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kelola berita — KKN LPPM Universitas Al-Ghifari</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+
+<main class="max-w-[1200px] mx-auto px-5 py-5">
+
+  <div class="flex flex-wrap items-center gap-3 mb-4">
+    <p class="text-sm text-tinta-redup flex-1 min-w-[16rem]">
+      Berita yang diterbitkan tampil di halaman depan
+      <a href="/" class="text-biru underline underline-offset-2">kknlppm.unfari.ac.id</a>.
+    </p>
+    <output id="ringkasan" class="font-data text-xs text-tinta-redup whitespace-nowrap"></output>
+    <button id="tombolTambah" class="tombol-utama">Tulis berita</button>
+  </div>
+
+  <div id="pesan" hidden role="alert"></div>
+
+  <div class="bg-kertas rounded-lg shadow-kartu overflow-hidden">
+    <div class="overflow-auto max-h-[calc(100vh-15rem)]">
+      <table class="register">
+        <thead>
+          <tr>
+            <th>Judul</th>
+            <th class="hidden md:table-cell">Penulis</th>
+            <th>Status</th>
+            <th class="hidden sm:table-cell">Terbit</th>
+            <th class="text-right">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody id="isiTabel"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div id="tirai" class="tirai" hidden></div>
+<aside id="laci" class="laci" hidden aria-labelledby="judulLaci" role="dialog" aria-modal="true">
+  <form id="formBerita" class="flex flex-col h-full" novalidate>
+    <div class="px-5 py-4 border-b border-garis">
+      <h2 id="judulLaci" class="judul-halaman text-lg">Tulis berita</h2>
+    </div>
+
+    <div class="flex-1 overflow-auto px-5 py-4 space-y-4">
+      <div id="pesanLaci" hidden role="alert"></div>
+
+      <div>
+        <label for="fJudul" class="block text-sm font-medium mb-1.5">Judul</label>
+        <input id="fJudul" name="judul" class="medan" required maxlength="140"
+               placeholder="mis. Penutupan KKN Angkatan XII di Desa Cikahuripan">
+        <p class="text-xs text-tinta-redup mt-1">
+          Maksimal 140 karakter. <strong>Judul dikunci setelah diterbitkan</strong> —
+          alamat berita dibuat darinya, dan alamat yang sudah dibagikan orang
+          tidak boleh mati.
+        </p>
+      </div>
+
+      <div>
+        <label for="fRingkasan" class="block text-sm font-medium mb-1.5">Ringkasan</label>
+        <textarea id="fRingkasan" name="ringkasan" class="medan" rows="2" maxlength="300"
+                  placeholder="Satu atau dua kalimat yang tampil di bawah judul"></textarea>
+      </div>
+
+      <div>
+        <label for="fIsi" class="block text-sm font-medium mb-1.5">Isi berita</label>
+        <textarea id="fIsi" name="isi" class="medan" rows="12" required
+                  placeholder="Tulis biasa. Kosongkan satu baris untuk memisahkan paragraf."></textarea>
+        <p class="text-xs text-tinta-redup mt-1">
+          <strong>Teks polos.</strong> Tidak ada tebal, miring, atau daftar — dan
+          itu disengaja: halaman depan satu alamat dengan aplikasi ini, jadi
+          apa pun yang bisa jadi HTML di sana bisa mencuri sesi pembacanya.
+          Baris kosong memisahkan paragraf.
+        </p>
+      </div>
+
+      <div>
+        <label for="fPenulis" class="block text-sm font-medium mb-1.5">Penulis</label>
+        <input id="fPenulis" name="penulis" class="medan" placeholder="mis. LPPM Unfari">
+      </div>
+
+      <fieldset class="border border-garis rounded-md p-3">
+        <legend class="text-sm font-medium px-1">Tautan (opsional)</legend>
+        <div class="space-y-3">
+          <div>
+            <label for="fTautanURL" class="block text-xs text-tinta-redup mb-1">Alamat</label>
+            <input id="fTautanURL" name="tautan_url" class="medan font-data" type="url"
+                   placeholder="https://…">
+          </div>
+          <div>
+            <label for="fTautanLabel" class="block text-xs text-tinta-redup mb-1">Tulisan tombolnya</label>
+            <input id="fTautanLabel" name="tautan_label" class="medan" maxlength="80"
+                   placeholder="mis. Unduh laporan">
+          </div>
+        </div>
+        <p class="text-xs text-tinta-redup mt-2">Harus dimulai http:// atau https://.</p>
+      </fieldset>
+
+      <div>
+        <span class="block text-sm font-medium mb-1.5">Foto</span>
+        <div id="daftarFoto" class="grid grid-cols-3 gap-2 mb-2"></div>
+        <input id="fFoto" type="file" accept="image/jpeg,image/png,image/webp" class="text-sm">
+        <p id="ketFoto" class="text-xs text-tinta-redup mt-1">
+          JPG, PNG, atau WebP. Maksimal 5 MB per foto.
+        </p>
+      </div>
+
+      <label class="flex items-center gap-2 text-sm">
+        <input id="fTerbit" name="terbit" type="checkbox" class="w-4 h-4 accent-biru">
+        Terbitkan di halaman depan
+      </label>
+      <p class="text-xs text-tinta-redup -mt-2">
+        Selama tidak dicentang, berita ini draf dan tidak terlihat siapa pun
+        selain admin.
+      </p>
+    </div>
+
+    <div class="px-5 py-4 border-t border-garis flex gap-2 justify-end">
+      <button type="button" id="tombolBatal" class="tombol-halus">Batal</button>
+      <button type="submit" id="tombolSimpan" class="tombol-utama">Simpan</button>
+    </div>
+  </form>
+</aside>
+
+<script type="module">
+import { getJSON, postJSON, deleteJSON, postFileWithHeader } from "/assets/js/jscroot/api.js";
+import { backend } from "/assets/js/config.js";
+import { requireLogin, tokenHeader } from "/assets/js/auth.js";
+import { pasang } from "/assets/js/nav.js";
+import { buat as buatLaci } from "/assets/js/laci.js";
+import { el, sel, tanda, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
+
+if (requireLogin()) {
+    pasang("Kelola berita", "Tampil di halaman depan publik");
+
+    const isi = document.getElementById("isiTabel");
+    const elPesan = document.getElementById("pesan");
+    const ringkasan = document.getElementById("ringkasan");
+    const form = document.getElementById("formBerita");
+    const laci = buatLaci("laci", "tirai", "tombolBatal");
+
+    let sunting = null;
+    let fotoTerpasang = [];   // id objek
+    let fotoURL = [];         // alamat baca, sejajar dengan fotoTerpasang
+
+    function tanggalIndonesia(iso) {
+        if (!iso) return "—";
+        const bulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+                       "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+        const d = new Date(iso);
+        if (isNaN(d)) return "—";
+        return d.getDate() + " " + bulan[d.getMonth()] + " " + d.getFullYear();
+    }
+
+    function baris(b) {
+        const tr = el("tr");
+
+        const tdJudul = sel(b.judul, "font-medium max-w-[26rem] truncate");
+        tdJudul.title = b.judul || "";
+        tr.appendChild(tdJudul);
+
+        tr.appendChild(sel(b.penulis, "text-sm hidden md:table-cell"));
+        tr.appendChild(b.terbit ? tanda("terbit", "sah") : tanda("draf", "kosong"));
+        tr.appendChild(sel(tanggalIndonesia(b.tanggal_terbit), "kode whitespace-nowrap hidden sm:table-cell"));
+
+        const td = el("td", "text-right whitespace-nowrap");
+        if (b.terbit) {
+            const lihat = el("a", "tautan-aksi", "Lihat");
+            lihat.href = "/berita/?slug=" + encodeURIComponent(b.slug || "");
+            lihat.target = "_blank";
+            lihat.rel = "noopener";
+            td.appendChild(lihat);
+        }
+        const ubah = el("button", "tautan-aksi ml-3", "Ubah");
+        ubah.type = "button";
+        ubah.addEventListener("click", function () { bukaForm(b); });
+        const hapus = el("button", "tautan-aksi text-galat ml-3", "Hapus");
+        hapus.type = "button";
+        hapus.addEventListener("click", function () { hapusBerita(b); });
+        td.appendChild(ubah);
+        td.appendChild(hapus);
+        tr.appendChild(td);
+        return tr;
+    }
+
+    function muat() {
+        sembunyikan(elPesan);
+        kosongkan(isi);
+        getJSON(backend.news.kelola + "?limit=100", function (hasil) {
+            if (!sehat(hasil, elPesan)) return;
+            const amplop = hasil.data || {};
+            const rows = amplop.data || [];
+            if (!rows.length) {
+                const tr = el("tr");
+                const td = el("td", "text-center py-10 text-tinta-redup text-sm",
+                    "Belum ada berita. Tulis yang pertama.");
+                td.colSpan = 5;
+                tr.appendChild(td);
+                isi.appendChild(tr);
+            } else {
+                rows.forEach(function (b) { isi.appendChild(baris(b)); });
+            }
+            const m = amplop.meta || {};
+            const terbit = rows.filter(function (b) { return b.terbit; }).length;
+            ringkasan.textContent = (m.total || 0) + " berita · " + terbit + " terbit";
+        }, ...tokenHeader());
+    }
+
+    function gambarFoto() {
+        const wadah = document.getElementById("daftarFoto");
+        kosongkan(wadah);
+        fotoURL.forEach(function (u, i) {
+            const bungkus = el("div", "relative");
+            const img = document.createElement("img");
+            img.src = u;
+            img.alt = "";
+            img.className = "w-full h-20 object-cover rounded border border-garis";
+            const buang = el("button", "absolute top-1 right-1 bg-kertas border border-garis rounded px-1.5 text-xs text-galat", "×");
+            buang.type = "button";
+            buang.setAttribute("aria-label", "Buang foto ini");
+            buang.addEventListener("click", function () {
+                fotoTerpasang.splice(i, 1);
+                fotoURL.splice(i, 1);
+                gambarFoto();
+            });
+            bungkus.appendChild(img);
+            bungkus.appendChild(buang);
+            wadah.appendChild(bungkus);
+        });
+    }
+
+    document.getElementById("fFoto").addEventListener("change", function () {
+        if (!this.files || !this.files[0]) return;
+        const ket = document.getElementById("ketFoto");
+        ket.textContent = "Mengunggah…";
+
+        // postFileWithHeader jscroot: ia mengirim multipart dengan nama medan
+        // yang kita tentukan, dan backend menunggu medan bernama "foto".
+        postFileWithHeader(backend.news.unggahFoto, ...tokenHeader(), "fFoto", "foto",
+            function (hasil) {
+                document.getElementById("fFoto").value = "";
+                // Berbeda dari getJSON/postJSON, callback ini menerima badan
+                // yang SUDAH di-parse tanpa kode status — jadi keberhasilan
+                // dikenali dari bentuk jawabannya, bukan dari status.
+                const d = (hasil || {}).data || {};
+                if (!d.foto) {
+                    ket.textContent = (hasil && hasil.message) ||
+                        "Foto gagal diunggah. Berita tetap bisa disimpan tanpa foto.";
+                    return;
+                }
+                fotoTerpasang.push(d.foto);
+                fotoURL.push(d.foto_url);
+                gambarFoto();
+                ket.textContent = "JPG, PNG, atau WebP. Maksimal 5 MB per foto.";
+            });
+    });
+
+    function bukaForm(b) {
+        sunting = b || null;
+        document.getElementById("judulLaci").textContent = b ? "Ubah berita" : "Tulis berita";
+        form.judul.value = b ? (b.judul || "") : "";
+        form.ringkasan.value = b ? (b.ringkasan || "") : "";
+        form.isi.value = b ? (b.paragraf || []).join("\n\n") : "";
+        form.penulis.value = b ? (b.penulis || "") : "";
+        form.tautan_url.value = b ? (b.tautan_url || "") : "";
+        form.tautan_label.value = b ? (b.tautan_label || "") : "";
+        form.terbit.checked = b ? !!b.terbit : false;
+        fotoTerpasang = b ? (b.foto || []).slice() : [];
+        fotoURL = b ? (b.foto_url || []).slice() : [];
+        gambarFoto();
+        document.getElementById("ketFoto").textContent = "JPG, PNG, atau WebP. Maksimal 5 MB per foto.";
+        sembunyikan(document.getElementById("pesanLaci"));
+        laci.buka();
+    }
+
+    document.getElementById("tombolTambah").addEventListener("click", function () { bukaForm(null); });
+
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const pl = document.getElementById("pesanLaci");
+        sembunyikan(pl);
+        const tombol = document.getElementById("tombolSimpan");
+        tombol.disabled = true;
+
+        // Satu baris kosong memisahkan paragraf. Yang kosong dibuang di sini
+        // dan sekali lagi di server.
+        const paragraf = form.isi.value.split(/\n\s*\n/)
+            .map(function (p) { return p.trim(); })
+            .filter(function (p) { return p !== ""; });
+
+        const jalur = backend.news.kelola +
+            (sunting ? "?id=" + encodeURIComponent(sunting.id) : "");
+
+        postJSON(jalur, {
+            judul: form.judul.value.trim(),
+            ringkasan: form.ringkasan.value.trim(),
+            paragraf: paragraf,
+            foto: fotoTerpasang,
+            tautan_url: form.tautan_url.value.trim(),
+            tautan_label: form.tautan_label.value.trim(),
+            penulis: form.penulis.value.trim(),
+            terbit: form.terbit.checked,
+        }, function (hasil) {
+            tombol.disabled = false;
+            if (!sehat(hasil, pl)) return;
+            laci.tutup();
+            muat();
+        }, ...tokenHeader());
+    });
+
+    function hapusBerita(b) {
+        if (!window.confirm("Hapus berita “" + (b.judul || "") + "”?")) return;
+        deleteJSON(backend.news.satu(encodeURIComponent(b.id)), {}, function (hasil) {
+            if (!sehat(hasil, elPesan)) return;
+            muat();
+        }, ...tokenHeader());
+    }
+
+    muat();
+}
+</script>
+</body>
+</html>

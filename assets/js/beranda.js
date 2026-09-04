@@ -14,6 +14,9 @@
 // pencurian sesi. Lebih mudah tidak pernah membukanya daripada menutupnya
 // nanti setengah-setengah.
 
+import { getJSON } from "/assets/js/jscroot/api.js";
+import { backend } from "/assets/js/config.js";
+
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
@@ -203,6 +206,93 @@ if (daftarTanya) {
         bungkus.appendChild(isi);
         daftarTanya.appendChild(bungkus);
         pengamat.observe(bungkus);
+    });
+}
+
+/* Berita ---------------------------------------------------------------- */
+//
+// Satu-satunya panggilan API di halaman ini, dan ia harus boleh gagal tanpa
+// merusak apa pun: sisa halaman depan tetap utuh, dan yang tampil hanya
+// keadaan kosong. Karena itu TIDAK memakai ui.js:sehat() — halaman publik
+// tidak boleh melempar pengunjung ke /login/ hanya karena servernya diam.
+
+const wadahBerita = $("#daftarBerita");
+const beritaKosong = $("#beritaKosong");
+
+function tanggalIndonesia(iso) {
+    if (!iso) return "";
+    const bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                   "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const d = new Date(iso);
+    if (isNaN(d)) return "";
+    return d.getDate() + " " + bulan[d.getMonth()] + " " + d.getFullYear();
+}
+
+function kartuBerita(b) {
+    const a = el("a", "pos");
+    a.href = "/berita/?slug=" + encodeURIComponent(b.slug || "");
+
+    const gbr = el("div", "pos__gbr");
+    const isi = el("div");
+    // Alamat foto datang dari server dan dipasang lewat style, bukan disisipkan
+    // ke markup. encodeURI menjaga tanda kutip tidak bisa keluar dari url().
+    const foto = (b.foto_url || [])[0];
+    if (foto) {
+        isi.style.backgroundImage = 'url("' + encodeURI(foto) + '")';
+    } else {
+        // Tanpa foto, blok 4:3 ini hanya ruang mati. Ringkasannya ditaruh di
+        // sini supaya kartunya tetap memberi tahu sesuatu — dan sebagian
+        // berita memang tidak akan pernah punya foto.
+        isi.className = "pos__tanpa-foto";
+        if (b.ringkasan) isi.appendChild(el("p", null, b.ringkasan));
+    }
+    gbr.appendChild(isi);
+
+    const badan = el("div", "pos__isi");
+    // textContent, selalu. Judul dan ringkasan diketik admin.
+    badan.appendChild(el("div", "pos__judul", b.judul || ""));
+
+    const meta = el("div", "pos__meta");
+    const tgl = tanggalIndonesia(b.tanggal_terbit);
+    if (tgl) meta.appendChild(el("span", null, tgl));
+    if (b.penulis) meta.appendChild(el("span", null, b.penulis));
+    badan.appendChild(meta);
+
+    a.appendChild(gbr);
+    a.appendChild(badan);
+    return a;
+}
+
+function gambarBerita(daftar) {
+    if (!daftar.length) return;                 // keadaan kosong sudah tampil
+    daftar.slice(0, 3).forEach((b) => wadahBerita.appendChild(kartuBerita(b)));
+    wadahBerita.hidden = false;
+    beritaKosong.hidden = true;
+    $$("[data-reveal]", wadahBerita).forEach((e) => pengamat.observe(e));
+}
+
+if (wadahBerita && beritaKosong) {
+    let dijawab = false;
+
+    // jscroot `api.js` menelan galat jaringan ke console TANPA memanggil
+    // callback-nya. Tanpa penjaga ini, bagian berita akan menggantung dalam
+    // keadaan kosong tanpa pernah menyerah — tampak sama saja, tapi tidak ada
+    // yang tahu bedanya "belum ada berita" dari "server tidak terjangkau".
+    const penjaga = setTimeout(() => {
+        if (dijawab) return;
+        dijawab = true;
+        beritaKosong.textContent = "";
+        beritaKosong.appendChild(el("b", null, "Berita belum bisa dimuat"));
+        beritaKosong.appendChild(document.createTextNode(
+            "Server tidak terjangkau saat ini. Sisa halaman ini tetap bisa dibaca."));
+    }, 10000);
+
+    getJSON(backend.news.daftar + "?limit=3", (hasil) => {
+        if (dijawab) return;
+        dijawab = true;
+        clearTimeout(penjaga);
+        if (!hasil || hasil.status !== 200) return;   // keadaan kosong bertahan
+        gambarBerita(((hasil.data || {}).data) || []);
     });
 }
 

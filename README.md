@@ -67,7 +67,8 @@ celah XSS berarti sesi tercuri.** Karena itu:
    Perkakas di `assets/js/ui.js` sudah menegakkan ini; pakai itu.
    Dari jscroot: **`setInnerText`, jangan `setInner`** — `setInner`,
    `insertHTML`, `renderHTML`, dan `replaceTag` semuanya menulis lewat
-   `innerHTML`.
+   `innerHTML`. Berlaku penuh untuk berita: judul, ringkasan, dan paragrafnya
+   diketik admin, dan halaman depan satu origin dengan aplikasi ini.
 2. Tidak ada `eval`, `new Function`, atau URL `javascript:`.
 3. Pustaka pihak ketiga di-*vendor*, bukan dari CDN. jscroot tidak ada di
    npm, jadi `assets/js/jscroot/` di-commit apa adanya — jangan menggantinya
@@ -82,7 +83,7 @@ celah XSS berarti sesi tercuri.** Karena itu:
 |---|---|
 | `index.html` | **Halaman depan publik — GELAP.** Tampil untuk semua, termasuk yang sudah punya sesi |
 | `assets/css/beranda.css` | Gaya halaman depan. **Bukan Tailwind, bukan hasil build — ditulis tangan dan di-commit** |
-| `assets/js/beranda.js` | Perilaku halaman depan. Tidak memanggil API sama sekali |
+| `assets/js/beranda.js` | Perilaku halaman depan. Satu-satunya panggilan API-nya `GET /news`, publik |
 | `assets/img/` | Latar halaman depan: bentang bukit dan gurun dari Fora, dipakai apa adanya. Keluaran program, bukan foto — lihat `SUMBER.md` |
 | `login/` | Halaman masuk |
 | `data-kkn/` | Register peserta KKN — paginasi, saringan tahun ajaran, pencarian |
@@ -91,6 +92,8 @@ celah XSS berarti sesi tercuri.** Karena itu:
 | `sertifikat/` | Menerbitkan sertifikat dan membuka PDF-nya |
 | `data-induk/` | Program studi, dosen, mata kuliah, pengguna |
 | `verifikasi/` | Verifikasi publik, tanpa login |
+| `berita/` | **Halaman baca satu berita — GELAP, publik.** `/berita/?slug=…`; bentuk `/berita/<slug>` dialihkan `404.html` |
+| `kelola-berita/` | Menulis dan menerbitkan berita. **Admin saja**, dan itu ditegakkan backend |
 | `assets/js/jscroot/` | **Pustaka jscroot v0.2.8, di-*vendor*.** Jangan disunting — lihat `VERSI.md` di dalamnya |
 | `assets/js/config.js` | Peta `backend` (titik-ujung) dan `id`, bergaya jscroot `skeleton`. Tidak boleh memuat rahasia apa pun |
 | `assets/js/auth.js` | Sesi localStorage, penjaga halaman, dan `tokenHeader()` yang disodorkan ke panggilan jscroot |
@@ -98,9 +101,9 @@ celah XSS berarti sesi tercuri.** Karena itu:
 | `assets/js/nav.js` | Kepala halaman dan navigasi yang mengikuti peran |
 | `assets/js/laci.js` | Laci formulir: fokus dipindah masuk, Escape menutup, Tab terjebak di dalam |
 
-**Halaman depan berdiri di luar semua ini.** Ia gelap, memakai `beranda.css`
-sendiri, tidak memuat `app.css`, tidak menyentuh jscroot, dan tidak memanggil
-API sama sekali. Token gelapnya sengaja tidak masuk `tailwind.config.js`, dan
+**Halaman depan dan halaman baca berita berdiri di luar semua ini.** Keduanya
+gelap, memakai `beranda.css` sendiri, dan tidak memuat `app.css`. Keduanya
+memanggil API — tapi hanya rute publik `/news`, tidak pernah rute ber-token. Token gelapnya sengaja tidak masuk `tailwind.config.js`, dan
 `index.html` + `beranda.js` dikecualikan dari pemindaian Tailwind — kalau tidak,
 kelas yang hanya dipakai halaman depan ikut menumpuk di `app.css`.
 

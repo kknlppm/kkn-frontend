@@ -33,6 +33,15 @@
       var m = window.location.pathname.match(/\/verifikasi\/([a-fA-F0-9]{32})\/?$/);
       if (m) {
           window.location.replace("/verifikasi/?token=" + m[1]);
+          return;
+      }
+
+      // Alamat berita yang dibagikan orang: /berita/<slug>. Ditambahkan
+      // SESUDAH aturan verifikasi dan dengan `return` di atas, supaya jalur
+      // QR tidak pernah tersentuh apa pun yang ditambahkan di bawahnya.
+      var b = window.location.pathname.match(/\/berita\/([a-z0-9][a-z0-9-]{0,120})\/?$/);
+      if (b) {
+          window.location.replace("/berita/?slug=" + encodeURIComponent(b[1]));
       }
   })();
   </script>
