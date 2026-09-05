@@ -18,19 +18,28 @@ import { el } from "./ui.js";
 
 // Urutannya mengikuti alur kerja: daftar orang dulu, lalu menilai, lalu
 // menerbitkan. Data induk paling belakang karena paling jarang disentuh.
+// Bagian sidebar. STATIS — bukan menu bersarang yang bisa dibuka-tutup.
+//
+// Menu bersarang menambah keadaan buka/tutup, penyorotan induk-aktif, dan
+// ingatan "ini di bawah apa" untuk pohon yang cuma dua tingkat dengan sembilan
+// daun; setiap klik tambahan menuju daun dibayar setiap hari. Label statis
+// memberi manfaat pemindaian yang sama dengan biaya interaksi nol, dan tetap
+// bekerja saat sidebar diciutkan jadi rel ikon — di sana ia jadi garis pemisah.
+const BAGIAN = { kkn: "Kuliah Kerja Nyata", data: "Data", sistem: "Sistem", akun: "Akun" };
+
 const TAUTAN = [
-    { url: "/data-kkn/",      label: "Register",   ikon: "register",   peran: [P.ADMIN, P.PEMBAYARAN, P.MAHASISWA, P.DOSEN, P.VALIDASI_LPPM, P.ADMIN_FAKULTAS] },
-    { url: "/kelompok/",      label: "Kelompok",   ikon: "kelompok",   peran: [P.ADMIN, P.ADMIN_FAKULTAS] },
-    { url: "/penilaian/",     label: "Penilaian",  ikon: "penilaian",  peran: [P.ADMIN, P.DOSEN] },
-    { url: "/sertifikat/",    label: "Sertifikat", ikon: "sertifikat", peran: [P.ADMIN, P.VALIDASI_LPPM] },
-    { url: "/data-induk/",    label: "Data induk", ikon: "induk",      peran: [P.ADMIN, P.ADMIN_FAKULTAS] },
-    { url: "/kelola-berita/", label: "Berita",     ikon: "berita",     peran: [P.ADMIN] },
-    { url: "/nilai-matkul/",  label: "Nilai matkul", ikon: "matkul",  peran: [P.ADMIN, P.DOSEN] },
-    { url: "/pengaturan/",    label: "Pengaturan", ikon: "pengaturan", peran: [P.ADMIN] },
-    // Ganti sandi berlaku untuk SEMUA peran — termasuk yang tujuannya
-    // tunggal, yang karena itu jadi punya sidebar. Sandi sendiri tidak boleh
-    // hanya bisa diubah admin.
-    { url: "/sandi/",         label: "Ganti sandi", ikon: "sandi",     peran: [P.ADMIN, P.PEMBAYARAN, P.MAHASISWA, P.DOSEN, P.VALIDASI_LPPM, P.ADMIN_FAKULTAS] },
+    // URUTANNYA MENGIKAT: label bagian digambar saat bagiannya berganti,
+    // jadi tujuan sebagian yang sama harus berdampingan. Menyisipkan satu
+    // baris di tempat yang salah membuat satu judul bagian muncul dua kali.
+    { url: "/data-kkn/",      label: "Register",   ikon: "register",   bagian: "kkn",    peran: [P.ADMIN, P.PEMBAYARAN, P.MAHASISWA, P.DOSEN, P.VALIDASI_LPPM, P.ADMIN_FAKULTAS] },
+    { url: "/kelompok/",      label: "Kelompok",   ikon: "kelompok",   bagian: "kkn",    peran: [P.ADMIN, P.ADMIN_FAKULTAS] },
+    { url: "/penilaian/",     label: "Penilaian",  ikon: "penilaian",  bagian: "kkn",    peran: [P.ADMIN, P.DOSEN] },
+    { url: "/sertifikat/",    label: "Sertifikat", ikon: "sertifikat", bagian: "kkn",    peran: [P.ADMIN, P.VALIDASI_LPPM] },
+    { url: "/nilai-matkul/",  label: "Nilai matkul", ikon: "matkul",  bagian: "kkn",    peran: [P.ADMIN, P.DOSEN] },
+    { url: "/data-induk/",    label: "Data induk", ikon: "induk",      bagian: "data",   peran: [P.ADMIN, P.ADMIN_FAKULTAS] },
+    { url: "/kelola-berita/", label: "Berita",     ikon: "berita",     bagian: "data",   peran: [P.ADMIN] },
+    { url: "/pengaturan/",    label: "Pengaturan", ikon: "pengaturan", bagian: "sistem", peran: [P.ADMIN] },
+    { url: "/akun/",          label: "Akun saya",  ikon: "sandi",      bagian: "akun",   peran: [P.ADMIN, P.PEMBAYARAN, P.MAHASISWA, P.DOSEN, P.VALIDASI_LPPM, P.ADMIN_FAKULTAS] },
 ];
 
 // Ikon garis 24×24 dari kumpulan Feather (MIT), disalin sebagai jalur — bukan
@@ -147,8 +156,18 @@ export function pasang(judul, keterangan) {
         const nav = document.createElement("nav");
         nav.className = "sisi__nav";
         nav.setAttribute("aria-label", "Bagian aplikasi");
+        const banyakBagian = new Set(boleh.map(function (t) { return t.bagian; })).size > 1;
         const sekarang = window.location.pathname.replace(/\/+$/, "/");
+        let bagianTerakhir = null;
         boleh.forEach(function (t) {
+            // Label bagian digambar saat bagiannya BERGANTI, dan hanya kalau
+            // masih ada bagian lain sesudahnya. Peran yang seluruh tujuannya
+            // ada di satu bagian tidak perlu diberi judul untuk satu-satunya
+            // kelompok yang ia punya.
+            if (t.bagian !== bagianTerakhir && banyakBagian) {
+                bagianTerakhir = t.bagian;
+                nav.appendChild(el("div", "sisi__bagian", BAGIAN[t.bagian] || ""));
+            }
             const a = el("a", "sisi__tautan");
             a.href = t.url;
             // title dibaca sebagai tooltip saat sidebar diciutkan jadi ikon.

@@ -568,7 +568,11 @@ const BERITA = [
             const t = [...sisi.querySelectorAll(".sisi__tautan")];
             return {
                 ada: true,
-                label: t.map(a => a.textContent.trim()),
+                // Diambil dari .sisi__label, bukan textContent seluruh <a>:
+                // kalau nanti ada lencana atau hitungan di dalam tautan, ia
+                // akan ikut terbaca dan asersinya jadi rapuh.
+                label: t.map(a => (a.querySelector(".sisi__label") || a).textContent.trim()),
+                bagian: [...sisi.querySelectorAll(".sisi__bagian")].map(e => e.textContent.trim()),
                 // semua butir muat tanpa digulung?
                 muatSemua: nav.scrollHeight <= nav.clientHeight + 1,
                 h1: document.querySelectorAll("h1").length,
@@ -588,7 +592,7 @@ const BERITA = [
     // Uji negatif yang menentukan: penyaringan peran masih hidup. Tanpa ini,
     // sidebar yang menampilkan SEMUANYA ke semua orang juga lulus uji di atas.
     const dosen = await lihat(4, { width: 1440, height: 900 });
-    const dosenBoleh = ["Register", "Penilaian", "Nilai matkul", "Ganti sandi"];
+    const dosenBoleh = ["Register", "Penilaian", "Nilai matkul", "Akun saya"];
     lapor(dosen.ada && dosen.label.length === dosenBoleh.length &&
           dosenBoleh.every((x) => dosen.label.includes(x)),
         `dosen hanya melihat tujuannya sendiri (${dosen.label.join(", ")})`);
@@ -599,8 +603,15 @@ const BERITA = [
     // Mahasiswa: dua tujuan sejak Ganti sandi ada. Sebelumnya satu, dan
     // karena itu ia tidak punya sidebar — dan tidak punya cara keluar.
     const mhs = await lihat(3, { width: 1440, height: 900 });
-    lapor(mhs.ada && mhs.label.length === 2 && mhs.label.includes("Ganti sandi"),
-        `mahasiswa melihat 2 tujuan termasuk Ganti sandi (${mhs.label.join(", ")})`);
+    lapor(mhs.ada && mhs.label.length === 2 && mhs.label.includes("Akun saya"),
+        `mahasiswa melihat 2 tujuan termasuk Akun saya (${mhs.label.join(", ")})`);
+
+    // Label bagian STATIS: ia menandai, bukan menavigasi. Kalau ia jadi
+    // tautan atau tombol, sidebar berubah jadi menu bersarang tanpa disengaja.
+    lapor(admin.bagian.length === 4,
+        `admin melihat 4 label bagian (${admin.bagian.join(" · ")})`);
+    lapor(mhs.bagian.length === 2,
+        `mahasiswa melihat 2 label bagian (${mhs.bagian.join(" · ")})`);
 }
 
 // ---------- 19. Setiap peran bisa keluar ----------

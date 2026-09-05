@@ -156,6 +156,14 @@
 
     .sisi__nav { @apply flex-1 overflow-y-auto p-3 space-y-0.5; }
 
+    /* Judul bagian. Diciutkan ia jadi GARIS: pemisahnya tetap terbaca tanpa
+       memaksa rel 60px memuat teks yang tidak muat. */
+    .sisi__bagian {
+        @apply px-3 pt-4 pb-1.5 font-data text-mikro uppercase text-tinta-samar;
+        letter-spacing: 0.12em;
+    }
+    .sisi__bagian:first-child { @apply pt-1; }
+
     .sisi__tautan {
         @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-tinta-redup
                transition-colors hover:bg-bata-muda hover:text-bata;
@@ -189,6 +197,10 @@
         body.sisi-ciut .sisi__ciut { @apply hidden; }
         body.sisi-ciut .sisi__merek:hover .sisi__ciut { @apply grid ml-0; }
         body.sisi-ciut .sisi__tautan { @apply justify-center px-0; }
+        body.sisi-ciut .sisi__bagian {
+            @apply p-0 mx-2 my-2 h-px overflow-hidden bg-garis text-transparent;
+        }
+        body.sisi-ciut .sisi__bagian:first-child { @apply hidden; }
         body.sisi-ciut .sisi__kaki { @apply px-2; }
         body.sisi-ciut .sisi__keluar { @apply px-0; }
         body.sisi-ciut .sisi__ciut svg { @apply rotate-180; }

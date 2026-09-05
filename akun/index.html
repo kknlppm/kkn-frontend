@@ -6,7 +6,7 @@
   <link rel="icon" href="/assets/favicon.ico" sizes="any">
   <link rel="icon" href="/assets/img/favicon-32.png" type="image/png">
   <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
-  <title>Ganti sandi — LPPM Universitas Al-Ghifari</title>
+  <title>Akun saya — LPPM Universitas Al-Ghifari</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -16,6 +16,17 @@
 
 <main class="max-w-xl mx-auto px-5 py-5">
   <div id="pesan" hidden role="alert"></div>
+
+  <!-- Identitas dulu, sandi kemudian. Orang membuka halaman ini untuk dua
+       hal, dan yang pertama adalah memastikan ia masuk sebagai siapa. -->
+  <section class="bg-kertas rounded-2xl shadow-kartu p-5 mb-5">
+    <h2 class="judul-halaman text-base mb-4">Identitas</h2>
+    <dl id="identitas" class="grid sm:grid-cols-2 gap-x-8 gap-y-3 text-sm"></dl>
+    <p class="text-xs text-tinta-redup mt-4">
+      Nama dan peran diubah admin lewat Data induk. Kalau ada yang keliru,
+      hubungi LPPM — bukan diperbaiki sendiri di sini.
+    </p>
+  </section>
 
   <section class="bg-kertas rounded-2xl shadow-kartu p-5">
     <h2 class="judul-halaman text-base mb-1">Ganti sandi</h2>
@@ -50,15 +61,57 @@
 </main>
 
 <script type="module">
-import { postJSON } from "/assets/js/jscroot/api.js";
+import { getJSON, postJSON } from "/assets/js/jscroot/api.js";
 import { getValue } from "/assets/js/jscroot/element.js";
 import { backend } from "/assets/js/config.js";
 import { requireLogin, tokenHeader } from "/assets/js/auth.js";
 import { pasang } from "/assets/js/nav.js";
-import { pesan, sembunyikan, sehat } from "/assets/js/ui.js";
+import { el, pesan, sembunyikan, sehat } from "/assets/js/ui.js";
 
 if (requireLogin()) {
-    pasang("Ganti sandi", "Akun Anda sendiri");
+    pasang("Akun saya", "Identitas dan sandi");
+
+    // ── identitas ──
+    // Dibaca dari /auth/me, bukan dari localStorage: yang di localStorage
+    // adalah salinan saat masuk, dan bisa basi kalau admin mengubah peran
+    // sesudahnya. Halaman yang gunanya memastikan "saya masuk sebagai siapa"
+    // tidak boleh menjawabnya dari ingatan.
+    const dl = document.getElementById("identitas");
+
+    function pasangBaris(kunci, nilai) {
+        if (nilai == null || nilai === "") return;
+        const dt = el("dt", "eyebrow text-tinta-redup", kunci);
+        const dd = el("dd", "mb-1", String(nilai));
+        dl.appendChild(dt);
+        dl.appendChild(dd);
+    }
+
+    getJSON(backend.auth.me, function (hasil) {
+        if (!sehat(hasil, elPesan)) return;
+        const d = (hasil.data || {}).data || {};
+        pasangBaris("Nama", d.name);
+        pasangBaris("Nama pengguna", d.uname);
+        pasangBaris("Peran", d.role_name);
+
+        // Kontak tinggal di dokumen domainnya, dan bentuknya berbeda per
+        // peran — mahasiswa punya NIM dan kelas, dosen punya NIDN.
+        const p = d.profil;
+        if (p && p.jenis === "mahasiswa") {
+            pasangBaris("NIM", p.nim);
+            pasangBaris("Kelas", p.kelas);
+            pasangBaris("Email", p.email);
+            pasangBaris("Telepon", p.phone);
+            pasangBaris("Domisili", p.domisili);
+        } else if (p && p.jenis === "dosen") {
+            pasangBaris("NIDN", p.nidn);
+            pasangBaris("Email", p.email);
+            const peran = [];
+            if (p.status_dpl) peran.push("Pembimbing lapangan KKN");
+            if (p.status_dpmk) peran.push("Pengampu mata kuliah");
+            pasangBaris("Penugasan", peran.join(" · "));
+        }
+        if (!dl.children.length) pasangBaris("Nama", "(tidak diketahui)");
+    }, ...tokenHeader());
 
     const form = document.getElementById("formSandi");
     const elPesan = document.getElementById("pesan");
