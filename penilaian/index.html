@@ -62,7 +62,7 @@
       </table>
     </div>
     <p class="px-4 py-2.5 border-t border-garis-tipis text-xs text-tinta-redup">
-      Nilai tersimpan begitu Anda pindah dari kotaknya. Rentang 0–100.
+      Satu baris tersimpan sekali, begitu Anda pindah ke baris lain. Enter turun satu baris. Rentang 0–100.
     </p>
   </div>
 </main>
@@ -104,15 +104,51 @@ if (requireLogin()) {
         td.appendChild(deretNilai(r).firstChild);
     }
 
+    function simpanBaris(r, tr) {
+        const t = tr.__tertunda;
+        const kunci = Object.keys(t);
+        if (!kunci.length) return;
+        if (tr.querySelector(".kotak-nilai.salah")) {
+            pesan(elPesan, "Nilai harus bilangan bulat 0 sampai 100.", "galat");
+            return;
+        }
+        const kirim = {};
+        kunci.forEach(function (k) { kirim[k] = t[k]; });
+        tr.classList.remove("baris-tertunda");
+        tr.classList.add("baris-menyimpan");
+
+        postJSON(backend.kkn.gradesKkn, { id: r.id, nilai5: kirim }, function (hasil) {
+            tr.classList.remove("baris-menyimpan");
+            if (!sehat(hasil, elPesan)) {
+                // Baris ditandai supaya penilai tahu angka di layar TIDAK
+                // tersimpan di server. Yang tertunda sengaja TIDAK dibuang:
+                // meninggalkan lalu kembali ke baris itu mencoba lagi.
+                tr.classList.add("baris-gagal");
+                return;
+            }
+            tr.classList.remove("baris-gagal");
+            kunci.forEach(function (k) { r[k] = t[k]; delete t[k]; });
+            r.nilai = ((hasil.data || {}).data || {}).nilai;
+            tr.__segarkan(r);
+            sembunyikan(elPesan);
+            tr.classList.add("baris-tersimpan");
+            setTimeout(function () { tr.classList.remove("baris-tersimpan"); }, 1600);
+        }, ...tokenHeader());
+    }
+
     function baris(r) {
         const tr = el("tr");
         tr.dataset.id = r.id;
+        // Yang diubah tapi belum terkirim, per baris.
+        const tertunda = {};
+        tr.__tertunda = tertunda;
         tr.appendChild(sel(r.nim, "kode whitespace-nowrap"));
         tr.appendChild(sel(r.name, "font-medium"));
 
         const tdDeret = el("td");
         const tdNilai = el("td", "text-right whitespace-nowrap");
 
+        tr.__segarkan = segarkan;
         function segarkan(data) {
             gambarDeret(tdDeret, data);
             kosongkan(tdNilai);
@@ -133,34 +169,44 @@ if (requireLogin()) {
             inp.value = r[aspek] || "";
             inp.setAttribute("aria-label", aspek.replace("nilai_", "").toUpperCase() + " untuk " + r.name);
 
-            inp.addEventListener("change", function () {
+            inp.dataset.aspek = aspek;
+
+            inp.addEventListener("input", function () {
                 const nilai = inp.value === "" ? 0 : Number(inp.value);
                 if (!Number.isInteger(nilai) || nilai < 0 || nilai > 100) {
                     inp.classList.add("salah");
-                    pesan(elPesan, "Nilai harus bilangan bulat 0 sampai 100.", "galat");
                     return;
                 }
                 inp.classList.remove("salah");
-                inp.classList.add("menyimpan");
-                postJSON(backend.kkn.gradesKkn, { id: r.id, field: aspek, nilai: nilai },
-                    function (hasil) {
-                        inp.classList.remove("menyimpan");
-                        if (!sehat(hasil, elPesan)) {
-                            // Kotaknya ditandai salah supaya penilai tahu
-                            // angka di layar TIDAK tersimpan di server.
-                            inp.classList.add("salah");
-                            return;
-                        }
-                        r[aspek] = nilai;
-                        r.nilai = ((hasil.data || {}).data || {}).nilai;
-                        segarkan(r);
-                        sembunyikan(elPesan);
-                        inp.classList.add("tersimpan");
-                        setTimeout(function () { inp.classList.remove("tersimpan"); }, 2000);
-                    }, ...tokenHeader());
+                // Hanya dicatat; kirimannya menunggu seluruh baris selesai.
+                if (nilai !== (r[aspek] || 0)) tertunda[aspek] = nilai;
+                else delete tertunda[aspek];
+                tr.classList.toggle("baris-tertunda", Object.keys(tertunda).length > 0);
             });
+
+            // Enter turun satu baris di kolom yang sama. Dosen mengisi
+            // menurun per aspek, bukan menyamping per mahasiswa.
+            inp.addEventListener("keydown", function (e) {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                const berikut = tr.nextElementSibling;
+                const sasaran = berikut && berikut.querySelector('[data-aspek="' + aspek + '"]');
+                if (sasaran) sasaran.focus(); else inp.blur();
+            });
+
             td.appendChild(inp);
             tr.appendChild(td);
+        });
+
+        // Disimpan saat fokus MENINGGALKAN baris, sekali untuk kelima kotak.
+        //
+        // Sebelumnya tiap kotak mengirim permintaannya sendiri: lima per
+        // mahasiswa, 60 untuk kelompok berisi 12 — dan 60 kesempatan gagal
+        // satu per satu di lokasi KKN yang sinyalnya buruk. Sekarang satu
+        // baris = satu permintaan.
+        tr.addEventListener("focusout", function (e) {
+            if (tr.contains(e.relatedTarget)) return;   // masih di baris ini
+            simpanBaris(r, tr);
         });
 
         tr.appendChild(tdDeret);

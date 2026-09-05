@@ -25,7 +25,12 @@ const TAUTAN = [
     { url: "/sertifikat/",    label: "Sertifikat", ikon: "sertifikat", peran: [P.ADMIN, P.VALIDASI_LPPM] },
     { url: "/data-induk/",    label: "Data induk", ikon: "induk",      peran: [P.ADMIN, P.ADMIN_FAKULTAS] },
     { url: "/kelola-berita/", label: "Berita",     ikon: "berita",     peran: [P.ADMIN] },
+    { url: "/nilai-matkul/",  label: "Nilai matkul", ikon: "matkul",  peran: [P.ADMIN, P.DOSEN] },
     { url: "/pengaturan/",    label: "Pengaturan", ikon: "pengaturan", peran: [P.ADMIN] },
+    // Ganti sandi berlaku untuk SEMUA peran — termasuk yang tujuannya
+    // tunggal, yang karena itu jadi punya sidebar. Sandi sendiri tidak boleh
+    // hanya bisa diubah admin.
+    { url: "/sandi/",         label: "Ganti sandi", ikon: "sandi",     peran: [P.ADMIN, P.PEMBAYARAN, P.MAHASISWA, P.DOSEN, P.VALIDASI_LPPM, P.ADMIN_FAKULTAS] },
 ];
 
 // Ikon garis 24×24 dari kumpulan Feather (MIT), disalin sebagai jalur — bukan
@@ -42,6 +47,8 @@ const IKON = {
     berita:     ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6",
                  "M16 13H8", "M16 17H8"],
     ciut:       ["M15 18l-6-6 6-6"],
+    matkul:     ["M4 19.5A2.5 2.5 0 0 1 6.5 17H20", "M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"],
+    sandi:      ["M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z", "M7 11V7a5 5 0 0 1 10 0v4"],
     keluar:     ["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", "M16 17l5-5-5-5", "M21 12H9"],
     pengaturan: ["M4 21v-7", "M4 10V3", "M12 21v-9", "M12 8V3", "M20 21v-5", "M20 12V3",
                  "M1 14h6", "M9 8h6", "M17 16h6"],

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/assets/favicon.ico" sizes="any">
+  <link rel="icon" href="/assets/img/favicon-32.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <title>Ganti sandi — LPPM Universitas Al-Ghifari</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+
+<main class="max-w-xl mx-auto px-5 py-5">
+  <div id="pesan" hidden role="alert"></div>
+
+  <section class="bg-kertas rounded-2xl shadow-kartu p-5">
+    <h2 class="judul-halaman text-base mb-1">Ganti sandi</h2>
+    <p class="text-xs text-tinta-redup mb-4">
+      Sandi lama wajib diisi. Sesudah diganti, sesi di perangkat lain masih
+      berlaku sampai dua jam — token tidak bisa ditarik lebih cepat.
+    </p>
+
+    <form id="formSandi" class="grid gap-4" novalidate>
+      <div>
+        <label for="lama" class="block text-sm font-medium mb-1.5">Sandi sekarang</label>
+        <input id="lama" name="lama" type="password" class="medan" required
+               autocomplete="current-password">
+      </div>
+      <div>
+        <label for="baru" class="block text-sm font-medium mb-1.5">Sandi baru</label>
+        <input id="baru" name="baru" type="password" class="medan" required
+               autocomplete="new-password" minlength="8">
+        <p class="text-xs text-tinta-redup mt-1">Minimal 8 karakter.</p>
+      </div>
+      <div>
+        <label for="ulang" class="block text-sm font-medium mb-1.5">Ulangi sandi baru</label>
+        <input id="ulang" name="ulang" type="password" class="medan" required
+               autocomplete="new-password">
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="tombolSimpan" type="submit" class="tombol-utama">Simpan sandi</button>
+        <output id="penanda" class="text-sm text-tinta-redup" aria-live="polite"></output>
+      </div>
+    </form>
+  </section>
+</main>
+
+<script type="module">
+import { postJSON } from "/assets/js/jscroot/api.js";
+import { getValue } from "/assets/js/jscroot/element.js";
+import { backend } from "/assets/js/config.js";
+import { requireLogin, tokenHeader } from "/assets/js/auth.js";
+import { pasang } from "/assets/js/nav.js";
+import { pesan, sembunyikan, sehat } from "/assets/js/ui.js";
+
+if (requireLogin()) {
+    pasang("Ganti sandi", "Akun Anda sendiri");
+
+    const form = document.getElementById("formSandi");
+    const elPesan = document.getElementById("pesan");
+    const penanda = document.getElementById("penanda");
+    const tombol = document.getElementById("tombolSimpan");
+
+    form.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        sembunyikan(elPesan);
+        const lama = getValue("lama");
+        const baru = getValue("baru");
+        const ulang = getValue("ulang");
+
+        // Diperiksa di sini juga supaya orang tidak menunggu perjalanan ke
+        // server untuk kesalahan yang sudah terlihat. Yang menegakkan
+        // aturannya tetap backend.
+        if (baru.length < 8) {
+            pesan(elPesan, "Sandi baru minimal 8 karakter.", "galat");
+            return;
+        }
+        if (baru !== ulang) {
+            pesan(elPesan, "Ulangan sandi tidak sama.", "galat");
+            return;
+        }
+        if (baru === lama) {
+            pesan(elPesan, "Sandi baru sama dengan yang lama.", "galat");
+            return;
+        }
+
+        tombol.disabled = true;
+        penanda.textContent = "Menyimpan…";
+        postJSON(backend.auth.sandi, { lama: lama, baru: baru }, function (hasil) {
+            tombol.disabled = false;
+            penanda.textContent = "";
+            // sehat() menangani 401 dengan membuang sesi dan kembali ke login
+            // — di halaman lain itu benar, tapi DI SINI 401 berarti "sandi
+            // lama salah", bukan "sesi habis". Karena itu diperiksa sendiri
+            // lebih dulu; kalau tidak, salah ketik satu huruf melempar orang
+            // keluar dari aplikasi.
+            if (hasil && hasil.status === 401) {
+                pesan(elPesan, "Sandi sekarang salah.", "galat");
+                return;
+            }
+            if (!sehat(hasil, elPesan)) return;
+            form.reset();
+            pesan(elPesan, "Sandi diperbarui.", "sah");
+        }, ...tokenHeader());
+    });
+}
+</script>
+</body>
+</html>

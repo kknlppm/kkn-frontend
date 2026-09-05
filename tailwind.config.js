@@ -108,8 +108,28 @@ module.exports = {
             fontSize: {
                 mikro: ["0.6875rem", { lineHeight: "1rem", letterSpacing: "0.06em" }],
             },
+            // ── skala elevasi ──
+            //
+            // Sampai 5 September 2026 seluruh aplikasi memakai SATU nilai
+            // bayangan. Akibatnya semua permukaan duduk di ketinggian yang
+            // sama dan antarmuka tidak pernah memberi tahu apa yang di atas
+            // apa: laci modal dan kartu diam tampak sederajat, dan kepala
+            // tabel yang menempel tidak terlihat melayang saat baris
+            // menyelinap di bawahnya.
+            //
+            // Empat tingkat, dipakai untuk MENYATAKAN LAPISAN — bukan hiasan.
+            // Halaman depan boleh berkedalaman kaya karena digulir sekali;
+            // halaman ini dipandangi berjam-jam, dan blur di belakang tabel
+            // merampas kontras justru pada angka yang sedang dibaca.
+            //
+            //   kartu  permukaan istirahat (kartu, panel)
+            //   naik   yang menempel: kepala tabel, kolom pertama
+            //   laci   permukaan modal: laci, sidebar ponsel
             boxShadow: {
                 kartu: "0 1px 2px rgba(11,27,43,.06), 0 8px 24px -12px rgba(11,27,43,.18)",
+                naik: "0 1px 0 rgba(11,27,43,.08), 0 6px 12px -8px rgba(11,27,43,.28)",
+                "naik-kanan": "1px 0 0 rgba(11,27,43,.08), 6px 0 12px -8px rgba(11,27,43,.28)",
+                laci: "0 2px 8px rgba(11,27,43,.10), 0 24px 64px -20px rgba(11,27,43,.45)",
             },
         },
     },

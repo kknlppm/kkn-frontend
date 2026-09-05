@@ -29,6 +29,17 @@
     <output id="ringkasan" class="font-data text-xs text-tinta-redup whitespace-nowrap"></output>
   </div>
 
+  <!-- Papan tindakan massal. Muncul hanya kalau ada yang dipilih — tombol
+       yang tidak bisa dipakai lebih baik tidak digambar daripada digambar
+       lalu dimatikan. -->
+  <div id="papanMassal" hidden
+       class="flex flex-wrap items-center gap-3 mb-4 rounded-xl bg-bata-muda px-4 py-3">
+    <output id="terpilih" class="text-sm font-medium"></output>
+    <button id="terbitkanMassal" type="button" class="tombol-utama">Terbitkan semua yang dipilih</button>
+    <button id="batalPilih" type="button" class="tombol-halus">Batalkan pilihan</button>
+    <progress id="majuMassal" hidden class="w-40 h-1.5"></progress>
+  </div>
+
   <p class="text-sm text-tinta-redup mb-4" id="keteranganTapis">
     Peserta yang sudah punya nilai KKN tapi sertifikatnya belum diterbitkan.
   </p>
@@ -40,6 +51,8 @@
       <table class="register">
         <thead>
           <tr>
+            <th class="w-10"><input id="pilihSemua" type="checkbox"
+                class="w-4 h-4 accent-bata" aria-label="Pilih semua di halaman ini"></th>
             <th>NIM</th>
             <th>Nama</th>
             <th class="hidden md:table-cell">Kelompok</th>
@@ -73,6 +86,15 @@ if (requireLogin()) {
     const inpCari = document.getElementById("cari");
     let tahun = "", status = "siap";
 
+    // Yang dipilih disimpan sebagai Map id -> baris, bukan sebagai daftar id:
+    // saat menerbitkan kita butuh namanya untuk pesan, dan rujukan barisnya
+    // untuk memperbaruinya di tempat.
+    const dipilih = new Map();
+    const papan = document.getElementById("papanMassal");
+    const elTerpilih = document.getElementById("terpilih");
+    const maju = document.getElementById("majuMassal");
+    const cekSemua = document.getElementById("pilihSemua");
+
     function tombolUnduh(r) {
         // Dibuka di tab baru, bukan diunduh paksa: orang biasanya ingin
         // MELIHAT sertifikatnya dulu sebelum menyimpannya.
@@ -105,8 +127,37 @@ if (requireLogin()) {
         return a;
     }
 
+    function segarkanPapan() {
+        const n = dipilih.size;
+        papan.hidden = n === 0;
+        elTerpilih.textContent = n + " peserta dipilih";
+        const kotak = isi.querySelectorAll('input[type="checkbox"]');
+        const bisa = isi.querySelectorAll('input[type="checkbox"]:not([disabled])');
+        cekSemua.checked = bisa.length > 0 && n >= bisa.length;
+        cekSemua.indeterminate = n > 0 && n < bisa.length;
+        cekSemua.disabled = kotak.length === 0 || bisa.length === 0;
+    }
+
     function baris(r) {
         const tr = el("tr");
+        r.__tr = tr;
+
+        // Hanya yang BELUM bersertifikat bisa dipilih. Yang sudah terbit
+        // nomornya tidak berubah lagi, jadi memilihnya tidak berarti apa-apa.
+        const tdCek = el("td");
+        const cek = document.createElement("input");
+        cek.type = "checkbox";
+        cek.className = "w-4 h-4 accent-bata";
+        cek.setAttribute("aria-label", "Pilih " + r.name);
+        cek.disabled = !!r.has_cert;
+        cek.checked = dipilih.has(r.id);
+        cek.addEventListener("change", function () {
+            if (cek.checked) dipilih.set(r.id, r); else dipilih.delete(r.id);
+            segarkanPapan();
+        });
+        tdCek.appendChild(cek);
+        tr.appendChild(tdCek);
+
         tr.appendChild(sel(r.nim, "kode whitespace-nowrap"));
         tr.appendChild(sel(r.name, "font-medium"));
         tr.appendChild(sel(String(r.kelompok || "").replace(/^kelompok\s+/i, ""), "kode hidden md:table-cell"));
@@ -123,24 +174,68 @@ if (requireLogin()) {
         } else {
             const b = el("button", "tombol-halus py-1 px-3 text-xs", "Terbitkan");
             b.type = "button";
-            b.addEventListener("click", function () {
+            b.addEventListener("click", async function () {
                 b.disabled = true;
                 b.textContent = "Menerbitkan…";
-                postJSON(backend.certificate.issue(encodeURIComponent(r.id)), {}, function (hasil) {
-                    if (!sehat(hasil, elPesan)) {
-                        b.disabled = false;
-                        b.textContent = "Terbitkan";
-                        return;
-                    }
-                    const d = (hasil.data || {}).data || {};
-                    pesan(elPesan, "Sertifikat " + d.no_sertifikat + " diterbitkan untuk " + r.name + ".", "sah");
-                    muat();
-                }, ...tokenHeader());
+                // Jalurnya sama dengan penerbitan massal — satu fungsi, satu
+                // perilaku. Kalau dipisah, yang satu akan diperbaiki dan yang
+                // lain tertinggal.
+                const h = await terbitSatu(r);
+                if (h.ok) {
+                    pesan(elPesan, "Sertifikat " + (r.no_sertifikat || "") +
+                        " diterbitkan untuk " + r.name + ".", "sah");
+                } else {
+                    b.disabled = false;
+                    b.textContent = "Terbitkan";
+                    pesan(elPesan, "Gagal menerbitkan untuk " + r.name + ": " + h.sebab, "galat");
+                }
             });
             td.appendChild(b);
         }
         tr.appendChild(td);
         return tr;
+    }
+
+    // tandaiTerbit memperbarui satu baris di tempat sesudah sertifikatnya
+    // terbit. Kalau saringannya "siap terbit", barisnya memang harus pergi.
+    function tandaiTerbit(r, no) {
+        r.has_cert = true;
+        r.no_sertifikat = no;
+        dipilih.delete(r.id);
+        const tr = r.__tr;
+        if (!tr || !tr.parentNode) { segarkanPapan(); return; }
+        if (status === "siap") {
+            tr.remove();
+            if (!isi.querySelectorAll("tr").length) {
+                const t = el("tr");
+                const d = el("td", "text-center py-10 text-tinta-redup text-sm",
+                    "Tidak ada yang siap diterbitkan pada tapisan ini.");
+                d.colSpan = 7; t.appendChild(d); isi.appendChild(t);
+            }
+        } else {
+            tr.replaceWith(baris(r));
+        }
+        segarkanPapan();
+    }
+
+    // terbitSatu mengembalikan Promise supaya penerbitan massal bisa
+    // menjalankannya BERURUTAN. Serentak akan menabrak penomoran sertifikat:
+    // nomornya diambil dari urutan terakhir, dan dua permintaan bersamaan
+    // bisa mendapat nomor yang sama.
+    function terbitSatu(r) {
+        return new Promise(function (selesai) {
+            postJSON(backend.certificate.issue(encodeURIComponent(r.id)), {}, function (hasil) {
+                if (!hasil || typeof hasil.status !== "number") { selesai({ ok: false, sebab: "tidak ada jawaban server" }); return; }
+                if (hasil.status === 401) { sehat(hasil, elPesan); selesai({ ok: false, sebab: "sesi habis" }); return; }
+                const amplop = hasil.data || {};
+                if (hasil.status < 200 || hasil.status >= 300) {
+                    selesai({ ok: false, sebab: amplop.message || ("HTTP " + hasil.status) });
+                    return;
+                }
+                tandaiTerbit(r, (amplop.data || {}).no_sertifikat);
+                selesai({ ok: true });
+            }, ...tokenHeader());
+        });
     }
 
     function muat() {
@@ -166,12 +261,20 @@ if (requireLogin()) {
                     status === "siap"
                         ? "Tidak ada yang siap diterbitkan pada tapisan ini."
                         : "Belum ada sertifikat terbit pada tapisan ini.");
-                td.colSpan = 6;
+                td.colSpan = 7;
                 tr.appendChild(td);
                 isi.appendChild(tr);
             } else {
                 rows.forEach(function (r) { isi.appendChild(baris(r)); });
             }
+            // Pilihan yang barisnya sudah tidak ada lagi harus dibuang,
+            // kalau tidak papan menghitung orang yang tidak terlihat.
+            const adaSekarang = new Set(rows.map(function (x) { return x.id; }));
+            Array.from(dipilih.keys()).forEach(function (id) {
+                if (!adaSekarang.has(id)) dipilih.delete(id);
+            });
+            segarkanPapan();
+
             const total = (amplop.meta && amplop.meta.total) || rows.length;
             ringkasan.textContent = total.toLocaleString("id-ID") + " peserta" +
                 (total > rows.length ? " · menampilkan " + rows.length : "");
@@ -217,6 +320,61 @@ if (requireLogin()) {
     inpCari.addEventListener("input", function () {
         clearTimeout(jeda);
         jeda = setTimeout(muat, 350);
+    });
+
+    // ── penerbitan massal ──
+    cekSemua.addEventListener("change", function () {
+        // Keadaan tujuan DIREKAM dulu. Tiap c.click() memanggil
+        // segarkanPapan(), yang menulis ulang cekSemua.checked — membacanya
+        // di dalam gelung berarti membaca nilai yang baru saja diubah gelung
+        // itu sendiri, dan "pilih semua" hanya memilih satu.
+        const mau = cekSemua.checked;
+        isi.querySelectorAll('input[type="checkbox"]:not([disabled])').forEach(function (c) {
+            if (c.checked !== mau) c.click();
+        });
+        cekSemua.checked = mau;
+    });
+    document.getElementById("batalPilih").addEventListener("click", function () {
+        dipilih.clear();
+        isi.querySelectorAll('input[type="checkbox"]').forEach(function (c) { c.checked = false; });
+        segarkanPapan();
+    });
+
+    document.getElementById("terbitkanMassal").addEventListener("click", async function () {
+        const daftar = Array.from(dipilih.values());
+        if (!daftar.length) return;
+        if (!window.confirm("Terbitkan " + daftar.length + " sertifikat? Nomor yang sudah terbit tidak bisa diubah lagi.")) return;
+
+        const tombol = this;
+        tombol.disabled = true;
+        maju.hidden = false;
+        maju.max = daftar.length;
+        maju.value = 0;
+
+        // BERURUTAN, bukan serentak. Nomor sertifikat diambil dari urutan
+        // terakhir di basis data; dua permintaan bersamaan bisa membaca
+        // urutan yang sama dan menerbitkan dua nomor kembar — dan nomor
+        // sertifikat tidak bisa diperbaiki sesudah tercetak.
+        let sukses = 0;
+        const gagal = [];
+        for (const r of daftar) {
+            const h = await terbitSatu(r);
+            if (h.ok) sukses++; else gagal.push(r.name + " (" + h.sebab + ")");
+            maju.value = sukses + gagal.length;
+        }
+
+        tombol.disabled = false;
+        maju.hidden = true;
+        if (!gagal.length) {
+            pesan(elPesan, sukses + " sertifikat diterbitkan.", "sah");
+        } else {
+            // Yang gagal disebut satu per satu. "Sebagian gagal" tanpa nama
+            // memaksa orang mencocokkan sendiri empat puluh baris.
+            pesan(elPesan, sukses + " berhasil, " + gagal.length + " gagal: " +
+                gagal.slice(0, 5).join("; ") + (gagal.length > 5 ? ", dan lainnya" : ""), "galat");
+        }
+        ringkasan.textContent = "";
+        muat();
     });
 
     muatTahun();

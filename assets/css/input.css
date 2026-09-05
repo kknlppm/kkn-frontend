@@ -40,6 +40,15 @@
         line-height: 1.55;
     }
 
+    /* Atribut `hidden` harus MENANG atas kelas display apa pun.
+       `[hidden]` dan `.flex` sama-sama berkekuatan 0,1,0, jadi yang menang
+       adalah yang belakangan — dan utilitas Tailwind selalu sesudah base.
+       Akibatnya `<div hidden class="flex">` tetap tergambar. Persis cacat
+       yang pernah ditemukan uji di beranda.css (.artikel__tautan), dan
+       kambuh di sini pada papan tindakan massal halaman Sertifikat: ia
+       tampil terus bertuliskan "0 peserta dipilih". */
+    [hidden] { display: none !important; }
+
     /* Fokus papan ketik harus selalu terlihat. Sistem ini dipakai dosen
        yang mengisi nilai berderet-deret dengan Tab. */
     :focus-visible {
@@ -83,7 +92,9 @@
     /* Pil, tinggi 38px, berat 500 — .btn--sm halaman depan apa adanya. */
     .tombol {
         @apply inline-flex items-center justify-center gap-2 rounded-full
-               h-[38px] px-5 text-sm font-medium whitespace-nowrap transition-colors
+               h-[38px] px-5 text-sm font-medium whitespace-nowrap
+               transition-[background-color,border-color,color,transform] duration-100
+               active:translate-y-px
                disabled:opacity-40 disabled:pointer-events-none;
     }
     .tombol-utama {
@@ -125,7 +136,7 @@
                -translate-x-full transition-transform duration-200
                lg:translate-x-0;
     }
-    body.sisi-terbuka .sisi { @apply translate-x-0; }
+    body.sisi-terbuka .sisi { @apply translate-x-0 shadow-laci; }
 
     .sisi__tirai {
         @apply fixed inset-0 z-30 bg-tinta/25 lg:hidden;
@@ -208,7 +219,8 @@
        memakai `redup` (5,86) bukan `samar` (4,34). */
     .register thead th {
         @apply sticky top-0 z-10 bg-latar text-left font-data text-mikro uppercase
-               text-tinta-redup px-3 py-2.5 border-b border-garis whitespace-nowrap;
+               text-tinta-redup px-3 py-2.5 border-b border-garis whitespace-nowrap
+               shadow-naik;
     }
     .register tbody td {
         @apply px-3 py-2 border-b border-garis-tipis align-middle;
@@ -234,9 +246,16 @@
         -webkit-appearance: none;
         margin: 0;
     }
-    .kotak-nilai.menyimpan { @apply border-bata bg-bata-muda; }
-    .kotak-nilai.tersimpan { @apply border-sah bg-sah-muda; }
     .kotak-nilai.salah     { @apply border-galat bg-galat-muda; }
+
+    /* Keadaan simpan sekarang milik BARIS, bukan kotak: satu baris dikirim
+       sekali untuk kelima kotaknya. Menandai kotak satu per satu akan
+       berbohong tentang apa yang sebenarnya sedang dikirim. */
+    .register tbody tr.baris-tertunda  td { @apply bg-belum-muda/50; }
+    .register tbody tr.baris-menyimpan td { @apply bg-bata-muda/60; }
+    .register tbody tr.baris-tersimpan td { @apply bg-sah-muda; }
+    .register tbody tr.baris-gagal     td { @apply bg-galat-muda; }
+    .register tbody tr.baris-tersimpan td { transition: background-color .4s; }
 
     /* ── laci formulir ── */
     .tirai {
@@ -246,7 +265,7 @@
 
     .laci {
         @apply fixed inset-y-0 right-0 z-50 w-full max-w-md bg-kertas
-               border-l border-garis shadow-kartu
+               border-l border-garis shadow-laci
                translate-x-full transition-transform duration-150;
     }
     .laci.terbuka { @apply translate-x-0; }
@@ -302,12 +321,10 @@
            dan barisnya terbaca terpotong dua. */
         background-color: color-mix(in srgb, theme("colors.bata.muda") 40%, theme("colors.kertas"));
     }
-    /* Batas tipis penanda bahwa isinya bersambung ke kanan. */
-    .register thead th:first-child::after,
-    .register tbody td:first-child::after {
-        content: "";
-        @apply pointer-events-none absolute inset-y-0 right-0 w-px bg-garis;
-    }
+    /* Melayang ke kanan, bukan sekadar bergaris rambut: kolom yang menempel
+       harus terbaca BERADA DI ATAS isi yang lewat di bawahnya. */
+    .register tbody td:first-child { @apply shadow-naik-kanan; }
+    .register thead th:first-child { @apply shadow-naik; }
 
     /* Sasaran sentuh. Di tetikus kerapatan ini disengaja; di jari, 32px
        terlalu kecil — pedoman peron minta 44. Dibedakan lewat jenis
@@ -317,6 +334,13 @@
         .segmen > button { @apply py-3.5; }
         .medan { @apply min-h-11; }
         .tab-nav { @apply py-3.5; }
+    }
+
+    /* Gerak dihormati: kalau pengguna memintanya berhenti, transisinya mati.
+       Bayangan tetap ada — itu menyatakan lapisan, bukan gerak. */
+    @media (prefers-reduced-motion: reduce) {
+        .tombol { transition: none; }
+        .tombol:active { transform: none; }
     }
 
     .huruf-mutu {

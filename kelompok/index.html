@@ -35,6 +35,7 @@
         <thead>
           <tr>
             <th>Kelompok</th>
+            <th class="text-right">Anggota</th>
             <th>Lokasi</th>
             <th>Dosen pembimbing</th>
             <th class="hidden sm:table-cell">NIDN</th>
@@ -116,8 +117,26 @@ if (requireLogin()) {
     function baris(g) {
         const tr = el("tr");
         tr.appendChild(sel(String(g.kelompok || "").replace(/^kelompok\s+/i, ""), "kode"));
+
+        // Jumlah anggota: angka yang paling dicari saat menempatkan. Nol
+        // ditandai — kelompok kosong biasanya berarti pekerjaan yang belum
+        // selesai, bukan keadaan yang wajar.
+        const n = g.jumlah_anggota || 0;
+        const tdN = el("td", "text-right whitespace-nowrap");
+        tdN.appendChild(el("span", "font-data text-sm tabular-nums" + (n ? "" : " text-tinta-samar"), n));
+        tr.appendChild(tdN);
+
         tr.appendChild(sel(g.lokasi));
-        tr.appendChild(sel(g.nama_dosen, "text-sm"));
+
+        // Kelompok tanpa pembimbing ditandai, tidak cuma dibiarkan bergaris.
+        // Itu daftar pekerjaan yang tersembunyi di dalam tabel.
+        if (g.nama_dosen) {
+            tr.appendChild(sel(g.nama_dosen, "text-sm"));
+        } else {
+            const td = el("td");
+            td.appendChild(el("span", "tanda is-belum", "belum ada DPL"));
+            tr.appendChild(td);
+        }
         tr.appendChild(sel(g.nidn, "kode hidden sm:table-cell"));
         tr.appendChild(sel(g.tahun_ajaran, "kode whitespace-nowrap"));
 

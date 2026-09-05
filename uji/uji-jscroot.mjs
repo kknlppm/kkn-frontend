@@ -579,22 +579,28 @@ const BERITA = [
     };
 
     const admin = await lihat(1, { width: 390, height: 844 });
-    lapor(admin.ada && admin.label.length === 7,
-        `admin melihat 7 tujuan di sidebar (${admin.label.length})`);
+    lapor(admin.ada && admin.label.length === 9,
+        `admin melihat 9 tujuan di sidebar (${admin.label.length})`);
     lapor(admin.muatSemua,
-        "ketujuhnya muat tanpa digulung di layar 390px — ini yang gagal pada baris tab lama");
+        "kesembilannya muat tanpa digulung di layar 390px — ini yang gagal pada baris tab lama");
     lapor(admin.h1 === 1, `judul halaman adalah <h1> (${admin.h1})`);
 
-    // Uji negatif: penyaringan peran masih hidup. Kalau sidebar menampilkan
-    // semuanya ke semua orang, uji di atas juga lulus.
+    // Uji negatif yang menentukan: penyaringan peran masih hidup. Tanpa ini,
+    // sidebar yang menampilkan SEMUANYA ke semua orang juga lulus uji di atas.
     const dosen = await lihat(4, { width: 1440, height: 900 });
-    lapor(dosen.ada && dosen.label.length === 2 &&
-          dosen.label.includes("Register") && dosen.label.includes("Penilaian"),
-        `dosen hanya melihat 2 tujuan (${dosen.label.join(", ")})`);
+    const dosenBoleh = ["Register", "Penilaian", "Nilai matkul", "Ganti sandi"];
+    lapor(dosen.ada && dosen.label.length === dosenBoleh.length &&
+          dosenBoleh.every((x) => dosen.label.includes(x)),
+        `dosen hanya melihat tujuannya sendiri (${dosen.label.join(", ")})`);
+    lapor(!dosen.label.includes("Sertifikat") && !dosen.label.includes("Pengaturan") &&
+          !dosen.label.includes("Data induk"),
+        "dosen TIDAK melihat Sertifikat, Pengaturan, atau Data induk");
 
-    // Peran bertujuan tunggal tidak digambari sidebar sama sekali.
+    // Mahasiswa: dua tujuan sejak Ganti sandi ada. Sebelumnya satu, dan
+    // karena itu ia tidak punya sidebar — dan tidak punya cara keluar.
     const mhs = await lihat(3, { width: 1440, height: 900 });
-    lapor(!mhs.ada, "mahasiswa tidak diberi sidebar untuk satu tautan");
+    lapor(mhs.ada && mhs.label.length === 2 && mhs.label.includes("Ganti sandi"),
+        `mahasiswa melihat 2 tujuan termasuk Ganti sandi (${mhs.label.join(", ")})`);
 }
 
 // ---------- 19. Setiap peran bisa keluar ----------
@@ -676,6 +682,42 @@ const BERITA = [
     await page.waitForTimeout(300);
     lapor(!diminta.some((u) => /[?&]bayar=/.test(u)),
         "nilai bayar yang tidak dikenali diabaikan, bukan diteruskan");
+    await ctx.close();
+}
+
+// ---------- 22. Atribut `hidden` menang atas kelas display ----------
+//
+// `[hidden]` dan `.flex` sama-sama 0,1,0; yang menang yang belakangan, dan
+// utilitas Tailwind selalu sesudah base. Cacat ini sudah pernah ditemukan
+// uji di halaman depan lalu kambuh di aplikasi: papan tindakan massal
+// Sertifikat tampil terus bertuliskan "0 peserta dipilih".
+{
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    await page.goto(B + "/404.html", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => {
+        localStorage.setItem("kkn_token", "token-uji-123");
+        localStorage.setItem("kkn_user", JSON.stringify({ name: "Uji", role: 1, role_name: "Admin" }));
+    });
+    await page.route("**/localhost:8090/**", (route) => route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ data: [], meta: { total: 0, page: 1, total_pages: 1 } }) }));
+    await page.goto(B + "/sertifikat/", { waitUntil: "networkidle" });
+    await page.waitForTimeout(300);
+    const r = await page.evaluate(() => {
+        const e = document.getElementById("papanMassal");
+        return { hidden: e.hidden, display: getComputedStyle(e).display };
+    });
+    lapor(r.hidden && r.display === "none",
+        `papan massal benar-benar tersembunyi saat kosong (hidden=${r.hidden}, display=${r.display})`);
+
+    // Uji negatif: aturannya tidak boleh menyembunyikan yang TIDAK ber-hidden.
+    const tampak = await page.evaluate(() => {
+        const e = document.getElementById("papanMassal");
+        e.hidden = false;
+        return getComputedStyle(e).display;
+    });
+    lapor(tampak === "flex", `dan tetap tampil begitu hidden dilepas (${tampak})`);
     await ctx.close();
 }
 
