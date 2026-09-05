@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/assets/favicon.ico" sizes="any">
+  <link rel="icon" href="/assets/img/favicon-32.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
   <title>Penilaian KKN — LPPM Universitas Al-Ghifari</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -115,7 +118,7 @@ if (requireLogin()) {
             kosongkan(tdNilai);
             if (data.nilai > 0) {
                 tdNilai.appendChild(el("span", "font-data text-sm tabular-nums", data.nilai));
-                tdNilai.appendChild(el("span", "huruf-mutu text-biru ml-1.5", hurufDari(data.nilai)));
+                tdNilai.appendChild(el("span", "huruf-mutu text-bata ml-1.5", hurufDari(data.nilai)));
             } else {
                 tdNilai.appendChild(el("span", "text-tinta-samar", "—"));
             }

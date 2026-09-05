@@ -24,11 +24,16 @@
   --btn-hover: #ffffff;
   --btn-text: #111;
 
-  /* Biru sertifikat, bukan biru Fora. Satu-satunya warna yang menyeberang
+  /* Bata gunung, bukan aksen Fora. Satu-satunya warna yang menyeberang
      dari aplikasi ke halaman ini — supaya keduanya masih terasa satu
-     lembaga meski terang dan gelapnya berbeda. */
-  --biru: #1074BA;
-  --biru-terang: #3E9BDD;
+     lembaga meski terang dan gelapnya berbeda.
+     Diambil dari punggung bukit di kaki halaman ini sendiri, bukan dari
+     logo kampus langsung: logo itu merah pekat dan berteriak di layar.
+     --bata-terang praktis warna puncak gunung terukur (#BE9392),
+     dihangatkan ke rona yang sama dengan aplikasi. */
+  --bata: #9C5248;
+  --bata-terang: #C28780;
+
 
   --radius: 22px;
   --radius-sm: 12px;
@@ -67,7 +72,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 /* Fokus papan ketik harus terlihat. Halaman ini publik dan sebagian
    pengunjungnya menavigasi dengan Tab. */
-:focus-visible { outline: 2px solid var(--biru-terang); outline-offset: 3px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--bata-terang); outline-offset: 3px; border-radius: 4px; }
 
 /* Layout --------------------------------------------------------------- */
 .container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 24px; }
@@ -122,11 +127,10 @@ ul { margin: 0; padding: 0; list-style: none; }
 .nav.is-scrolled { background: rgba(0,0,0,.7); backdrop-filter: blur(14px); border-color: var(--line); }
 .nav__inner { height: 100%; display: flex; align-items: center; justify-content: space-between; }
 .nav__brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 500; letter-spacing: -0.02em; }
-.nav__logo {
-  width: 26px; height: 26px; border-radius: 7px; background: var(--biru);
-  display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff;
-  font-family: var(--font-data);
-}
+/* Lambang kampus apa adanya. Ia sudah merah pekat, dan justru itu asal-usul
+   palet bata halaman ini — jadi ia tidak perlu diberi kotak berwarna di
+   belakangnya. Tanpa alt: namanya sudah tertulis di sebelahnya. */
+.nav__logo { width: 28px; height: 27px; object-fit: contain; flex: none; }
 .nav__links { display: flex; gap: 4px; }
 .nav__links a { padding: 8px 14px; font-size: 15px; color: var(--text-2); border-radius: 999px; transition: color .2s; }
 .nav__links a:hover { color: var(--text); }
@@ -146,7 +150,9 @@ body.nav-open .nav__mobile { display: block; }
 .hero { position: relative; padding: 150px 0 0; overflow: hidden; }
 .hero__sky {
   position: absolute; inset: 0; z-index: 0;
-  background: linear-gradient(180deg, #05070a 0%, #0a1119 35%, #14212c 60%, #24333f 100%);
+  /* Ujung bawahnya menghangat menemui punggung bukit yang berona bata.
+     Bagian atas tetap gelap netral — itu langit malam, bukan aksen. */
+  background: linear-gradient(180deg, #05070a 0%, #0d0a0b 35%, #1d1416 60%, #372529 100%);
 }
 .hero__hills {
   position: absolute; left: 0; right: 0; bottom: 0; height: 42%; z-index: 1;
@@ -195,7 +201,7 @@ body.nav-open .nav__mobile { display: block; }
 }
 .sertifikat::before {
   content: ""; position: absolute; inset: 0 0 auto; height: 5px;
-  background: linear-gradient(90deg, var(--biru), #073B61);
+  background: linear-gradient(90deg, var(--bata), #3A201C);
 }
 .sertifikat__lembaga { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #4A5D70; }
 .sertifikat__judul { font-size: 20px; letter-spacing: -.02em; margin: 10px 0 4px; }
@@ -210,9 +216,9 @@ body.nav-open .nav__mobile { display: block; }
 
 /* Deret lima aspek — lambang yang sama dengan di dalam aplikasi. */
 .deret { display: flex; align-items: flex-end; gap: 5px; height: 26px; }
-.deret i { width: 7px; border-radius: 2px; background: var(--biru); display: block; }
+.deret i { width: 7px; border-radius: 2px; background: var(--bata); display: block; }
 .deret i[data-kosong] { height: 4px; background: #CFDAE4; }
-.deret--gelap i { background: var(--biru-terang); }
+.deret--gelap i { background: var(--bata-terang); }
 .deret--gelap i[data-kosong] { background: rgba(255,255,255,.2); }
 
 
@@ -232,22 +238,26 @@ body.nav-open .nav__mobile { display: block; }
 .jendela--kartu { border-bottom: 1px solid rgba(255,255,255,.1); border-radius: 20px; }
 .jendela__sisi { padding: 18px; border-right: 1px solid rgba(255,255,255,.06); }
 .jendela__merek { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; margin-bottom: 20px; }
-.jendela__merek b { width: 18px; height: 18px; border-radius: 5px; background: var(--biru); display: grid; place-items: center; font-size: 9px; font-family: var(--font-data); }
+.jendela__merek b { width: 18px; height: 18px; border-radius: 5px; background: var(--bata); display: grid; place-items: center; font-size: 9px; font-family: var(--font-data); }
 .jendela__nav li { display: flex; align-items: center; gap: 9px; padding: 7px 4px; font-size: 13px; color: var(--text-3); }
 .jendela__nav li::before { content: ""; width: 13px; height: 13px; border-radius: 3px; background: rgba(255,255,255,.14); flex: none; }
 .jendela__nav li.on { color: var(--text); }
-.jendela__nav li.on::before { background: var(--biru-terang); }
+.jendela__nav li.on::before { background: var(--bata-terang); }
 .jendela__utama { position: relative; overflow: hidden; }
 
 /* Aurora — sama perannya dengan .app__aurora Fora, warnanya diambil dari
-   biru sertifikat supaya tetap satu lembaga. */
+   bata gunung supaya tetap satu lembaga. */
 .aurora {
   position: absolute; inset: 0;
+  /* Ketiga radial dan gradiennya diturunkan dari pita gunung yang terukur:
+     kabut puncak, bayang, lalu lereng. Bukan biru yang digeser ronanya —
+     biru di sini jenuh 84%, dan pada rona bata itu menghasilkan merah logo
+     yang berteriak. */
   background:
-    radial-gradient(70% 60% at 80% 25%, rgba(190, 224, 245, .85), transparent 60%),
-    radial-gradient(60% 70% at 25% 30%, rgba(7, 59, 97, .9), transparent 60%),
-    radial-gradient(50% 50% at 55% 85%, rgba(16, 116, 186, .8), transparent 60%),
-    linear-gradient(135deg, #07222f, #10557f 45%, #bcdcf0 100%);
+    radial-gradient(70% 60% at 80% 25%, rgba(233, 208, 201, .85), transparent 60%),
+    radial-gradient(60% 70% at 25% 30%, rgba(58, 32, 28, .9), transparent 60%),
+    radial-gradient(50% 50% at 55% 85%, rgba(156, 82, 72, .8), transparent 60%),
+    linear-gradient(135deg, #1c100e, #6b372f 45%, #dcc0b8 100%);
   animation: aurora 14s ease-in-out infinite alternate;
   filter: saturate(.95);
 }
@@ -270,12 +280,12 @@ body.nav-open .nav__mobile { display: block; }
 .kaca__baris:first-of-type { border-top: 0; }
 .kaca__nim { font-family: var(--font-data); color: rgba(255,255,255,.55); font-size: 11px; }
 .kaca__nama { color: #fff; }
-.kaca__nilai { font-family: var(--font-data); color: #cfe8fb; }
+.kaca__nilai { font-family: var(--font-data); color: #e9d0c9; }
 
 /* Lencana bulat berpermukaan, padanan .ov__ava Fora yang memakai conic. */
 .kaca__bulat {
   width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 12px;
-  background: conic-gradient(from 200deg, #3E9BDD, #bcdcf0, #1074BA, #3E9BDD);
+  background: conic-gradient(from 200deg, #C28780, #E9D0C9, #9C5248, #C28780);
   filter: blur(.4px); box-shadow: 0 10px 30px rgba(0,0,0,.45);
 }
 .kaca--tengah { text-align: center; }
@@ -344,7 +354,7 @@ body.nav-open .nav__mobile { display: block; }
 .panggung__slide .jendela__nav li { font-size: 11px; padding: 5px 4px; }
 .panggung__slide .jendela__isi { padding: 20px; }
 .panggung__slide.is-active { opacity: 1; transform: none; pointer-events: auto; }
-.panggung__no { font-family: var(--font-data); font-size: 12px; color: var(--biru-terang); letter-spacing: .1em; }
+.panggung__no { font-family: var(--font-data); font-size: 12px; color: var(--bata-terang); letter-spacing: .1em; }
 .panggung__judul { font-size: 27px; letter-spacing: -.02em; }
 .panggung__teks { color: var(--text-2); max-width: 520px; font-size: 15px; }
 .panggung__rinci { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
@@ -402,7 +412,7 @@ body.nav-open .nav__mobile { display: block; }
 .cuplik__baris:first-of-type { border-top: 0; }
 .cuplik__nim { font-family: var(--font-data); color: var(--text-3); font-size: 11px; }
 .cuplik__nama { color: var(--text); }
-.cuplik__nilai { font-family: var(--font-data); color: var(--biru-terang); }
+.cuplik__nilai { font-family: var(--font-data); color: var(--bata-terang); }
 .cuplik__kotak { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 4px; }
 .cuplik__kotak i {
   display: grid; place-items: center; height: 30px; border-radius: 6px;
@@ -417,7 +427,7 @@ body.nav-open .nav__mobile { display: block; }
   background: var(--bg-2); padding: 40px 44px;
   display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: center;
 }
-.pengumuman__periode { font-family: var(--font-data); font-size: 13px; color: var(--biru-terang); letter-spacing: .06em; }
+.pengumuman__periode { font-family: var(--font-data); font-size: 13px; color: var(--bata-terang); letter-spacing: .06em; }
 .pengumuman__judul { font-size: 26px; letter-spacing: -.02em; margin: 8px 0 10px; }
 .pengumuman__teks { color: var(--text-2); font-size: 15px; max-width: 520px; }
 .pengumuman__angka { text-align: right; }
@@ -438,7 +448,7 @@ body.nav-open .nav__mobile { display: block; }
 .pos__tanpa-foto::after {
   content: ""; position: absolute; left: 50%; top: 38%; width: 30%; aspect-ratio: 1;
   transform: translate(-50%, -50%) rotate(-8deg); border-radius: 18%;
-  background: linear-gradient(135deg, #cfe0ee, #7d9db4 50%, #3c576d);
+  background: linear-gradient(135deg, #e9d0c9, #b08a80 50%, #5e3a33);
   box-shadow: 0 24px 50px rgba(0,0,0,.6);
   opacity: .55;
 }
@@ -493,7 +503,7 @@ body.nav-open .nav__mobile { display: block; }
 .cta { position: relative; overflow: hidden; padding: 190px 0 0; }
 .cta__bg {
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, #000 0%, #0b1015 40%, #16202a 60%, #2c3a44 85%, #5d7c92 100%);
+  background: linear-gradient(180deg, #000 0%, #0d0a0b 40%, #1e1517 60%, #3d2b2c 85%, #8a6a68 100%);
 }
 .cta__dunes {
   position: absolute; left: 0; right: 0; bottom: 0; height: 45%;
@@ -531,10 +541,10 @@ body.nav-open .nav__mobile { display: block; }
 .ringkas__judul { font-weight: 600; font-size: 16px; color: #fff; }
 .ringkas__meta { display: flex; align-items: center; gap: 8px; font-size: 14px; color: rgba(255,255,255,.85); }
 .ringkas__titik { display: flex; }
-.ringkas__titik i { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(20,20,20,.9); margin-left: -6px; background: linear-gradient(135deg, #3E9BDD, #073B61); }
+.ringkas__titik i { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(20,20,20,.9); margin-left: -6px; background: linear-gradient(135deg, #C28780, #3A201C); }
 .ringkas__titik i:first-child { margin-left: 0; }
-.ringkas__titik i:nth-child(2) { background: linear-gradient(135deg, #bcdcf0, #1074BA); }
-.ringkas__titik i:nth-child(3) { background: linear-gradient(135deg, #7fb6dd, #0d4a75); }
+.ringkas__titik i:nth-child(2) { background: linear-gradient(135deg, #E9D0C9, #9C5248); }
+.ringkas__titik i:nth-child(3) { background: linear-gradient(135deg, #D0A79E, #4A241F); }
 .ringkas__tombol {
   margin-top: 12px; width: 100%; max-width: 420px; height: 44px; border-radius: 999px;
   background: #e6e6e6; color: #111; font-weight: 500; display: grid; place-items: center;

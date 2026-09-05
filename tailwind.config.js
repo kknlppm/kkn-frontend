@@ -33,8 +33,32 @@ module.exports = {
             transparent: "transparent",
             current: "currentColor",
 
-            // Diambil dari sertifikat yang sudah tercetak, bukan dikarang.
-            biru: { DEFAULT: "#1074BA", dalam: "#073B61", muda: "#DCEAF6" },
+            // Diambil dari PUNGGUNG BUKIT di kaki halaman depan
+            // (assets/img/beranda-punggung.webp), bukan dikarang — dan bukan
+            // dari logo kampus langsung. Logo itu merah pekat #E1000F; dipakai
+            // apa adanya ia berteriak di layar yang dipandangi berjam-jam.
+            // Gunung itu versi lembutnya, dan sudah ada di halaman depan.
+            //
+            // Piksel gunungnya diukur, bukan dikira:
+            //   puncak  #BE9392  rona   1°  jenuh 25%
+            //   lereng  #9A7273  rona 359°  jenuh 17%
+            //   bayang  #624345  rona 356°  jenuh 19%
+            //
+            // Pada jenuh 17% warnanya jadi abu kecokelatan, tidak terbaca
+            // sebagai warna. Jadi rona muka gunung yang terkena cahaya
+            // dipertahankan lalu dikuatkan seperlunya: rona 7°, jenuh 37%.
+            //
+            // Ronanya SENGAJA digeser dari 359° ke 7°. `galat` di bawah
+            // berona 357° — nyaris sama. Tanpa geseran itu, tautan dan pesan
+            // kesalahan jadi satu warna. Sekarang selisihnya 10° rona plus
+            // 31 poin jenuh; pesan galat tetap juga ditandai kotak bertoner
+            // dan kata, bukan warna saja.
+            //
+            //   bata       #9C5248  5,65 di kertas · 4,88 di latar
+            //   bata-dalam #5E2F29  10,97 memikul teks putih
+            //   bata-muda  #F6E7E3  4,70 terhadap bata di atasnya
+            bata: { DEFAULT: "#9C5248", dalam: "#5E2F29", muda: "#F6E7E3" },
+
 
             // Kontras diukur, bukan dikira-kira. Nilai sebelumnya (#64798C
             // dan #9AAAB9) menghasilkan 4,51 dan 2,38 terhadap putih —
@@ -45,7 +69,9 @@ module.exports = {
             // Karena itu `samar` hanya dipakai di atas kartu putih.
             tinta: { DEFAULT: "#0B1B2B", redup: "#4A5D70", samar: "#5D7186" },
 
-            // Kertas dingin bersemu biru — sengaja bukan krem.
+            // Kertas dingin bersemu biru — sengaja bukan krem, dan sengaja
+            // TIDAK ikut menghangat: latar netral sejuk membuat bata di
+            // atasnya terbaca sebagai warna, bukan sebagai noda.
             kertas: "#FFFFFF",
             latar: "#E9EFF4",
             // `garis` dan `tipis` memisahkan — itu hiasan, dan WCAG tidak

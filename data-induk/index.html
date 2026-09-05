@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/assets/favicon.ico" sizes="any">
+  <link rel="icon" href="/assets/img/favicon-32.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
   <title>Data induk — LPPM Universitas Al-Ghifari</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -229,7 +232,7 @@ if (requireLogin()) {
                 const c = document.createElement("input");
                 c.type = "checkbox";
                 c.name = m.nama;
-                c.className = "w-4 h-4 accent-biru";
+                c.className = "w-4 h-4 accent-bata";
                 c.checked = data ? !!data[m.nama] : !!m.bawaan;
                 l.appendChild(c);
                 l.appendChild(document.createTextNode(m.label));

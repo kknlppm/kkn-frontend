@@ -100,7 +100,16 @@ export function pasang(judul, keterangan) {
         sisi.id = "sisi";
 
         const merek = el("div", "sisi__merek");
-        merek.appendChild(el("b", "", "K"));
+        // Lambang kampus apa adanya — ia asal-usul palet bata, jadi tidak
+        // perlu kotak berwarna di belakangnya. alt kosong: namanya sudah
+        // tertulis di sebelahnya, dan saat sidebar diciutkan title-nya
+        // yang bicara.
+        const lambang = document.createElement("img");
+        lambang.src = "/assets/img/logo-unfari.png";
+        lambang.alt = "";
+        lambang.width = 26; lambang.height = 25;
+        merek.appendChild(lambang);
+        merek.title = "KKN LPPM · Universitas Al-Ghifari";
         merek.appendChild(el("span", "sisi__label", "KKN LPPM"));
 
         // Ciutkan jadi kolom ikon. Bukan hiasan: sidebar 240px mengambil

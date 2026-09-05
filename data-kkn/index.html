@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/assets/favicon.ico" sizes="any">
+  <link rel="icon" href="/assets/img/favicon-32.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
   <title>Register KKN — LPPM Universitas Al-Ghifari</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -116,7 +119,7 @@ if (requireLogin()) {
         const tdNilai = el("td", "text-right whitespace-nowrap");
         if (r.nilai > 0) {
             tdNilai.appendChild(el("span", "font-data text-sm tabular-nums", r.nilai));
-            tdNilai.appendChild(el("span", "huruf-mutu text-biru ml-1.5", r.huruf || ""));
+            tdNilai.appendChild(el("span", "huruf-mutu text-bata ml-1.5", r.huruf || ""));
         } else {
             tdNilai.appendChild(el("span", "text-tinta-samar", "—"));
         }

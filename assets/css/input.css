@@ -4,7 +4,7 @@
 
 /* ──────────────────────────────────────────────────────────────
    Sistem visual diturunkan dari sertifikat KKN yang sudah tercetak:
-   batang biru #1074BA di kaki halaman, nomor bergaya birokrasi
+   nomor bergaya birokrasi
    (005/LPPM/KKN/UNFARI/VIII/2023), dan nilai yang selalu terdiri
    tepat lima komponen H·S·L·QP·QL.
 
@@ -43,18 +43,21 @@
     /* Fokus papan ketik harus selalu terlihat. Sistem ini dipakai dosen
        yang mengisi nilai berderet-deret dengan Tab. */
     :focus-visible {
-        outline: 2px solid theme("colors.biru.DEFAULT");
+        outline: 2px solid theme("colors.bata.DEFAULT");
         outline-offset: 3px;
         border-radius: 4px;
     }
 }
 
 @layer components {
-    /* Garis biru tipis di paling atas setiap halaman — kutipan langsung
-       dari batang di kaki sertifikat. Satu-satunya hiasan yang dipakai,
-       dan ia menautkan layar ke dokumen yang dihasilkannya. */
+    /* Garis tipis di paling atas setiap halaman. Dulu biru, mengutip batang
+       di kaki sertifikat; sejak paletnya pindah ke bata ia mengutip punggung
+       bukit di kaki halaman depan. Yang dikutip berubah, perannya tidak:
+       satu-satunya hiasan yang dipakai, dan ia menautkan layar ke lembaga
+       yang sama. Batang biru sertifikat masih ada — di halaman verifikasi,
+       tempat ia memang meniru benda cetak. */
     .pita-atas {
-        @apply fixed inset-x-0 top-0 h-[3px] bg-biru z-50;
+        @apply fixed inset-x-0 top-0 h-[3px] bg-bata z-50;
     }
 
     /* Berat 500 dan pelacakan -0.02em: itu yang dipakai halaman depan pada
@@ -74,7 +77,7 @@
     .medan {
         @apply w-full bg-kertas border border-garis-kendali rounded-[10px] px-3 py-2
                text-sm placeholder:text-tinta-samar
-               focus:border-biru focus:ring-0;
+               focus:border-bata focus:ring-0;
     }
 
     /* Pil, tinggi 38px, berat 500 — .btn--sm halaman depan apa adanya. */
@@ -84,10 +87,10 @@
                disabled:opacity-40 disabled:pointer-events-none;
     }
     .tombol-utama {
-        @apply tombol bg-biru text-kertas hover:bg-biru-dalam;
+        @apply tombol bg-bata text-kertas hover:bg-bata-dalam;
     }
     .tombol-halus {
-        @apply tombol border border-garis-kendali bg-kertas text-tinta hover:border-biru hover:text-biru;
+        @apply tombol border border-garis-kendali bg-kertas text-tinta hover:border-bata hover:text-bata;
     }
 
     /* Segmen tahun ajaran. Tahun ajarannya cuma LIMA — menyembunyikannya
@@ -105,10 +108,10 @@
                transition-colors whitespace-nowrap;
     }
     .segmen > button[aria-pressed="true"] {
-        @apply bg-biru text-kertas;
+        @apply bg-bata text-kertas;
     }
     .segmen > button:not([aria-pressed="true"]):hover {
-        @apply text-biru bg-biru-muda;
+        @apply text-bata bg-bata-muda;
     }
 
     /* ── kerangka: sidebar kiri ──
@@ -128,28 +131,29 @@
         @apply fixed inset-0 z-30 bg-tinta/25 lg:hidden;
     }
 
-    /* Kotak biru bertuliskan K — kutipan langsung dari .nav__logo di halaman
-       depan, supaya keduanya terbaca sebagai satu lembaga. */
+    /* Lambang kampus apa adanya — sama persis dengan .nav__logo di halaman
+       depan, supaya keduanya terbaca sebagai satu lembaga. Ia tidak diberi
+       kotak berwarna di belakangnya: lambang itu justru ASAL-USUL palet
+       bata di sini. */
     .sisi__merek {
         @apply flex items-center gap-2.5 px-5 h-16 shrink-0
                font-medium tracking-[-0.02em] border-b border-garis-tipis;
     }
-    .sisi__merek b {
-        @apply grid place-items-center w-6 h-6 rounded-[7px] bg-biru
-               text-kertas font-data text-[11px] font-bold;
+    .sisi__merek img {
+        @apply w-[26px] h-[25px] object-contain shrink-0;
     }
 
     .sisi__nav { @apply flex-1 overflow-y-auto p-3 space-y-0.5; }
 
     .sisi__tautan {
         @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-tinta-redup
-               transition-colors hover:bg-biru-muda hover:text-biru;
+               transition-colors hover:bg-bata-muda hover:text-bata;
     }
     .sisi__tautan svg { @apply w-[18px] h-[18px] shrink-0; }
     /* Halaman yang sedang dibuka: bukan sekadar warna, tapi permukaan —
        di kolom, garis bawah tidak lagi berfungsi sebagai penanda. */
     .sisi__tautan[aria-current="page"] {
-        @apply bg-biru text-kertas font-medium;
+        @apply bg-bata text-kertas font-medium;
     }
 
     .sisi__kaki { @apply shrink-0 border-t border-garis-tipis p-4; }
@@ -158,7 +162,7 @@
 
     .sisi__ciut {
         @apply place-items-center w-7 h-7 ml-auto shrink-0 rounded-md
-               text-tinta-samar transition-colors hover:bg-biru-muda hover:text-biru;
+               text-tinta-samar transition-colors hover:bg-bata-muda hover:text-bata;
     }
     .sisi__ciut svg { @apply w-4 h-4 transition-transform; }
 
@@ -192,7 +196,7 @@
 
     .kepala__menu {
         @apply grid place-items-center w-10 h-10 shrink-0 -ml-2 rounded-lg
-               text-tinta-redup hover:bg-biru-muda hover:text-biru;
+               text-tinta-redup hover:bg-bata-muda hover:text-bata;
     }
     .kepala__menu i { @apply block w-[18px] h-[1.5px] bg-current my-[3px]; }
 
@@ -210,7 +214,7 @@
         @apply px-3 py-2 border-b border-garis-tipis align-middle;
     }
     .register tbody tr:hover td {
-        @apply bg-biru-muda/40;
+        @apply bg-bata-muda/40;
     }
     .kode {
         @apply font-data text-xs text-tinta-redup;
@@ -222,7 +226,7 @@
     .kotak-nilai {
         @apply w-14 text-center font-data text-sm bg-kertas
                border border-garis-kendali rounded-lg px-1 py-1
-               focus:border-biru focus:ring-0;
+               focus:border-bata focus:ring-0;
         -moz-appearance: textfield;
     }
     .kotak-nilai::-webkit-outer-spin-button,
@@ -230,7 +234,7 @@
         -webkit-appearance: none;
         margin: 0;
     }
-    .kotak-nilai.menyimpan { @apply border-biru bg-biru-muda; }
+    .kotak-nilai.menyimpan { @apply border-bata bg-bata-muda; }
     .kotak-nilai.tersimpan { @apply border-sah bg-sah-muda; }
     .kotak-nilai.salah     { @apply border-galat bg-galat-muda; }
 
@@ -248,7 +252,7 @@
     .laci.terbuka { @apply translate-x-0; }
 
     .tautan-aksi {
-        @apply text-sm text-biru hover:underline underline-offset-2;
+        @apply text-sm text-bata hover:underline underline-offset-2;
     }
 
     /* ── penanda status ── */
@@ -269,7 +273,7 @@
         @apply inline-flex items-end gap-[3px] h-5;
     }
     .deret-nilai i {
-        @apply block w-[4px] rounded-[1px] bg-biru;
+        @apply block w-[4px] rounded-[1px] bg-bata;
         min-height: 2px;
     }
     .deret-nilai i[data-kosong="1"] {
@@ -296,7 +300,7 @@
     .register tbody tr:hover td:first-child {
         /* Tanpa ini sel yang menempel tetap putih saat barisnya disinggahi,
            dan barisnya terbaca terpotong dua. */
-        background-color: color-mix(in srgb, theme("colors.biru.muda") 40%, theme("colors.kertas"));
+        background-color: color-mix(in srgb, theme("colors.bata.muda") 40%, theme("colors.kertas"));
     }
     /* Batas tipis penanda bahwa isinya bersambung ke kanan. */
     .register thead th:first-child::after,
