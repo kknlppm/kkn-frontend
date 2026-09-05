@@ -36,6 +36,9 @@
 //      jadi anonim tepat saat Nilai dan Sertifikat akhirnya terlihat.
 //  15. Sasaran sentuh 44px HANYA pada penunjuk kasar. Kerapatan di tetikus
 //      disengaja; kalau aturannya bocor ke sana, tabel jadi renggang.
+//  16. Sidebar memuat SEMUA tujuan peran sekaligus, tanpa digulung. Baris tab
+//      lama butuh 596px sedangkan ponsel memuat 350px — tiga tujuan terakhir
+//      tidak terlihat ADA. Itu yang diganti, jadi itu yang dijaga.
 //
 // Backend TIDAK perlu hidup: jawabannya dipalsukan lewat page.route, jadi uji
 // ini bisa dijalankan sendirian.
@@ -534,6 +537,57 @@ const BERITA = [
     // Uji negatif: aturannya TIDAK boleh bocor ke tetikus.
     lapor(!tetikus.kasar && tetikus.segmen < 44 && tetikus.tombol < 44,
         `kerapatan tetikus tetap (segmen ${tetikus.segmen}, tombol ${tetikus.tombol})`);
+}
+
+// ---------- 18. Sidebar: semua tujuan peran terlihat sekaligus ----------
+{
+    const lihat = async (peran, viewport) => {
+        const ctx = await browser.newContext({ viewport });
+        const page = await ctx.newPage();
+        await page.goto(B + "/404.html", { waitUntil: "domcontentloaded" });
+        await page.evaluate((r) => {
+            localStorage.setItem("kkn_token", "token-uji-123");
+            localStorage.setItem("kkn_user", JSON.stringify({ name: "Uji", role: r, role_name: "x" }));
+        }, peran);
+        await page.route("**/localhost:8090/**", (route) => route.fulfill({
+            status: 200, contentType: "application/json",
+            body: JSON.stringify({ data: [], meta: { total: 0, page: 1, total_pages: 1 } }) }));
+        await page.goto(B + "/data-kkn/", { waitUntil: "networkidle" });
+        await page.waitForTimeout(250);
+        const r = await page.evaluate(() => {
+            const sisi = document.querySelector(".sisi");
+            if (!sisi) return { ada: false, label: [] };
+            const nav = sisi.querySelector(".sisi__nav");
+            const t = [...sisi.querySelectorAll(".sisi__tautan")];
+            return {
+                ada: true,
+                label: t.map(a => a.textContent.trim()),
+                // semua butir muat tanpa digulung?
+                muatSemua: nav.scrollHeight <= nav.clientHeight + 1,
+                h1: document.querySelectorAll("h1").length,
+            };
+        });
+        await ctx.close();
+        return r;
+    };
+
+    const admin = await lihat(1, { width: 390, height: 844 });
+    lapor(admin.ada && admin.label.length === 7,
+        `admin melihat 7 tujuan di sidebar (${admin.label.length})`);
+    lapor(admin.muatSemua,
+        "ketujuhnya muat tanpa digulung di layar 390px — ini yang gagal pada baris tab lama");
+    lapor(admin.h1 === 1, `judul halaman adalah <h1> (${admin.h1})`);
+
+    // Uji negatif: penyaringan peran masih hidup. Kalau sidebar menampilkan
+    // semuanya ke semua orang, uji di atas juga lulus.
+    const dosen = await lihat(4, { width: 1440, height: 900 });
+    lapor(dosen.ada && dosen.label.length === 2 &&
+          dosen.label.includes("Register") && dosen.label.includes("Penilaian"),
+        `dosen hanya melihat 2 tujuan (${dosen.label.join(", ")})`);
+
+    // Peran bertujuan tunggal tidak digambari sidebar sama sekali.
+    const mhs = await lihat(3, { width: 1440, height: 900 });
+    lapor(!mhs.ada, "mahasiswa tidak diberi sidebar untuk satu tautan");
 }
 
 await browser.close();

@@ -2,13 +2,14 @@
     "name": "kkn-frontend",
     "version": "1.0.0",
     "private": true,
-    "description": "Aplikasi KKN LPPM UNFARI — situs statis untuk GitHub Pages. Tailwind + DaisyUI dikompilasi ke satu app.css, bukan Play CDN.",
+    "description": "Aplikasi KKN LPPM UNFARI — situs statis untuk GitHub Pages. Tailwind + Flowbite dikompilasi ke satu app.css, bukan Play CDN. flowbite dipakai sebagai plugin Tailwind saja; flowbite.min.js (133 KB) tidak pernah dikirim.",
     "scripts": {
         "build": "npm run build:css",
         "build:css": "tailwindcss -i ./assets/css/input.css -o ./assets/css/app.css --minify",
         "watch:css": "tailwindcss -i ./assets/css/input.css -o ./assets/css/app.css --watch"
     },
     "devDependencies": {
+        "flowbite": "^2.5.2",
         "tailwindcss": "3.4.13"
     }
 }

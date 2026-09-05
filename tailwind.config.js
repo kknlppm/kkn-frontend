@@ -13,6 +13,12 @@ module.exports = {
         "./assets/js/**/*.js",
         "!./assets/js/beranda.js",
         "!./assets/js/jscroot/**",
+        // Flowbite 2.5.2 — jalur Tailwind 3. Versi 4.x menuntut Tailwind v4,
+        // yang membuang tailwind.config.js ini beserta palet yang kontrasnya
+        // sudah diukur. Dipakai POLANYA (sidebar, dropdown), bukan JS-nya:
+        // laci.js sudah menjebak fokus dan mengembalikannya ke pemanggil,
+        // dan itu lebih baik daripada laci generik seharga 133 KB.
+        "./node_modules/flowbite/**/*.js",
     ],
 
     // Kelas yang dirakit dinamis di JavaScript tidak terlihat oleh pemindai
@@ -82,5 +88,5 @@ module.exports = {
         },
     },
 
-    plugins: [],
+    plugins: [require("flowbite/plugin")],
 };

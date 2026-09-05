@@ -80,7 +80,7 @@
     /* Pil, tinggi 38px, berat 500 — .btn--sm halaman depan apa adanya. */
     .tombol {
         @apply inline-flex items-center justify-center gap-2 rounded-full
-               h-[38px] px-5 text-sm font-medium transition-colors
+               h-[38px] px-5 text-sm font-medium whitespace-nowrap transition-colors
                disabled:opacity-40 disabled:pointer-events-none;
     }
     .tombol-utama {
@@ -111,41 +111,90 @@
         @apply text-biru bg-biru-muda;
     }
 
-    /* Baris tab lebih lebar dari layar ponsel: tujuh tab butuh 596px, dan
-       yang terlihat cuma empat. Tanpa penanda, "Data induk", "Berita", dan
-       "Pengaturan" tidak terlihat ADA — bukan sekadar sulit dijangkau.
-       Gradiennya dipasang nav.js hanya di sisi yang memang masih ada isinya. */
-    .nav-gulung {
-        @apply relative;
+    /* ── kerangka: sidebar kiri ──
+       Menggantikan baris tab mendatar. Baris itu butuh 596px sedangkan
+       ponsel memuat 350px: tiga tujuan terakhir tidak terlihat ADA, bukan
+       sekadar sulit dijangkau. Dalam kolom, ketujuhnya terbaca sekaligus.
+       Polanya dari Flowbite 2.5.2; JS buka/tutupnya ditulis di nav.js. */
+    .sisi {
+        @apply fixed inset-y-0 left-0 z-40 w-60 flex flex-col
+               bg-kertas border-r border-garis
+               -translate-x-full transition-transform duration-200
+               lg:translate-x-0;
     }
-    .nav-gulung::before,
-    .nav-gulung::after {
-        content: "";
-        @apply pointer-events-none absolute inset-y-0 w-10 opacity-0
-               transition-opacity duration-150;
-    }
-    .nav-gulung::before {
-        @apply left-0;
-        background: linear-gradient(270deg, rgba(255, 255, 255, 0), theme("colors.kertas"));
-    }
-    .nav-gulung::after {
-        @apply right-0;
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0), theme("colors.kertas"));
-    }
-    .nav-gulung.geser-kiri::before,
-    .nav-gulung.geser-kanan::after {
-        @apply opacity-100;
+    body.sisi-terbuka .sisi { @apply translate-x-0; }
+
+    .sisi__tirai {
+        @apply fixed inset-0 z-30 bg-tinta/25 lg:hidden;
     }
 
-    /* Tab navigasi. Yang aktif ditandai garis biru di kakinya — sama
-       arahnya dengan batang biru di kaki sertifikat. */
-    .tab-nav {
-        @apply px-3 py-2.5 text-sm text-tinta-redup border-b-2 border-transparent
-               whitespace-nowrap transition-colors hover:text-biru;
+    /* Kotak biru bertuliskan K — kutipan langsung dari .nav__logo di halaman
+       depan, supaya keduanya terbaca sebagai satu lembaga. */
+    .sisi__merek {
+        @apply flex items-center gap-2.5 px-5 h-16 shrink-0
+               font-medium tracking-[-0.02em] border-b border-garis-tipis;
     }
-    .tab-nav[aria-current="page"] {
-        @apply text-tinta font-medium border-biru;
+    .sisi__merek b {
+        @apply grid place-items-center w-6 h-6 rounded-[7px] bg-biru
+               text-kertas font-data text-[11px] font-bold;
     }
+
+    .sisi__nav { @apply flex-1 overflow-y-auto p-3 space-y-0.5; }
+
+    .sisi__tautan {
+        @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-tinta-redup
+               transition-colors hover:bg-biru-muda hover:text-biru;
+    }
+    .sisi__tautan svg { @apply w-[18px] h-[18px] shrink-0; }
+    /* Halaman yang sedang dibuka: bukan sekadar warna, tapi permukaan —
+       di kolom, garis bawah tidak lagi berfungsi sebagai penanda. */
+    .sisi__tautan[aria-current="page"] {
+        @apply bg-biru text-kertas font-medium;
+    }
+
+    .sisi__kaki { @apply shrink-0 border-t border-garis-tipis p-4; }
+
+    .sisi__keluar svg { @apply w-4 h-4 shrink-0; }
+
+    .sisi__ciut {
+        @apply place-items-center w-7 h-7 ml-auto shrink-0 rounded-md
+               text-tinta-samar transition-colors hover:bg-biru-muda hover:text-biru;
+    }
+    .sisi__ciut svg { @apply w-4 h-4 transition-transform; }
+
+    /* ── mode ciut ──
+       Sidebar 240px mengambil lebar dari tabel: di layar 1440px nama
+       mahasiswa membungkus dua baris dan tinggi baris terukur 78px. Diciutkan
+       jadi 60px, isi halaman kembali ~1380px dan barisnya kembali satu baris.
+       Hanya berlaku di layar lebar — di ponsel sidebar memang off-canvas. */
+    @media (min-width: 1024px) {
+        body.sisi-ciut .sisi { @apply w-[60px]; }
+        body.sisi-ciut .sisi__label { @apply hidden; }
+        body.sisi-ciut .sisi__merek { @apply justify-center px-0; }
+        body.sisi-ciut .sisi__ciut { @apply hidden; }
+        body.sisi-ciut .sisi__merek:hover .sisi__ciut { @apply grid ml-0; }
+        body.sisi-ciut .sisi__tautan { @apply justify-center px-0; }
+        body.sisi-ciut .sisi__kaki { @apply px-2; }
+        body.sisi-ciut .sisi__keluar { @apply px-0; }
+        body.sisi-ciut .sisi__ciut svg { @apply rotate-180; }
+    }
+
+    /* Isi halaman digeser lewat body, bukan dengan menyunting tujuh berkas
+       HTML. `main` di tiap halaman tetap apa adanya. */
+    body.ada-sisi { @apply lg:pl-60; }
+    body.ada-sisi.sisi-ciut { @apply lg:pl-[60px]; }
+
+    .kepala { @apply bg-kertas border-b border-garis pt-[3px]; }
+    .kepala__isi {
+        @apply max-w-[1400px] mx-auto px-5 min-h-14 py-2
+               flex items-center gap-3;
+    }
+
+    .kepala__menu {
+        @apply grid place-items-center w-10 h-10 shrink-0 -ml-2 rounded-lg
+               text-tinta-redup hover:bg-biru-muda hover:text-biru;
+    }
+    .kepala__menu i { @apply block w-[18px] h-[1.5px] bg-current my-[3px]; }
 
     /* ── register ── */
     .register {
