@@ -25,7 +25,7 @@
 
   <div id="pesan" hidden role="alert"></div>
 
-  <div class="bg-kertas rounded-lg shadow-kartu overflow-hidden">
+  <div class="bg-kertas rounded-2xl shadow-kartu overflow-hidden">
     <div class="overflow-auto max-h-[calc(100vh-15rem)]">
       <table class="register">
         <thead><tr id="kepalaTabel"></tr></thead>
@@ -58,7 +58,7 @@ import { backend, PERAN } from "/assets/js/config.js";
 import { requireLogin, tokenHeader, getUser } from "/assets/js/auth.js";
 import { pasang } from "/assets/js/nav.js";
 import { buat as buatLaci } from "/assets/js/laci.js";
-import { el, sel, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
+import { el, sel, opsi, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
 
 if (requireLogin()) {
     pasang("Data induk");
@@ -241,13 +241,11 @@ if (requireLogin()) {
                 s.id = "f_" + m.nama;
                 s.name = m.nama;
                 s.className = "medan";
-                s.appendChild(el("option", "", "—"));
+                s.appendChild(opsi("", "—"));
 
                 function isiOpsi(opsi) {
                     (opsi || []).forEach(function (o) {
-                        const op = el("option", "", o.teks);
-                        op.value = o.nilai;
-                        s.appendChild(op);
+                        s.appendChild(opsi(o.nilai, o.teks));
                     });
                     if (data && data[m.nama] != null) s.value = String(data[m.nama]);
                 }

@@ -29,7 +29,7 @@
 
   <div id="pesan" hidden role="alert"></div>
 
-  <div class="bg-kertas rounded-lg shadow-kartu overflow-hidden">
+  <div class="bg-kertas rounded-2xl shadow-kartu overflow-hidden">
     <div class="overflow-auto max-h-[calc(100vh-14rem)]">
       <table class="register">
         <thead>
@@ -115,7 +115,7 @@ if (requireLogin()) {
 
         const tdNilai = el("td", "text-right whitespace-nowrap");
         if (r.nilai > 0) {
-            tdNilai.appendChild(el("span", "huruf-nilai font-data text-sm tabular-nums", r.nilai));
+            tdNilai.appendChild(el("span", "font-data text-sm tabular-nums", r.nilai));
             tdNilai.appendChild(el("span", "huruf-mutu text-biru ml-1.5", r.huruf || ""));
         } else {
             tdNilai.appendChild(el("span", "text-tinta-samar", "—"));

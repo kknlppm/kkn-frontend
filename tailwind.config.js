@@ -44,8 +44,16 @@ module.exports = {
             latar: "#E9EFF4",
             garis: { DEFAULT: "#CFDAE4", tipis: "#E3EAF1" },
 
-            sah: { DEFAULT: "#14804A", muda: "#DFF3E8" },
-            belum: { DEFAULT: "#A8621C", muda: "#FBECDC" },
+            // Penanda status dipakai sebagai teks 11px huruf besar DI ATAS
+            // latar mudanya sendiri, jadi ambangnya 4,5 — bukan 3. Nilai
+            // sebelumnya (#14804A dan #A8621C) menghasilkan 4,30 dan 4,09
+            // terhadap muda-nya: keduanya di bawah ambang, di kolom yang
+            // justru paling sering dibaca sekilas.
+            //   sah   #137C48  4,53 di sah-muda   · 5,24 di kertas
+            //   belum #9E5C1A  4,53 di belum-muda · 5,25 di kertas
+            //   galat #B4232A  5,39 di galat-muda · 6,53 di kertas
+            sah: { DEFAULT: "#137C48", muda: "#DFF3E8" },
+            belum: { DEFAULT: "#9E5C1A", muda: "#FBECDC" },
             galat: { DEFAULT: "#B4232A", muda: "#FBE4E5" },
         },
 

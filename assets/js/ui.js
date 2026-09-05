@@ -18,6 +18,21 @@ export function el(tag, kelas, teks) {
     return e;
 }
 
+// opsi membuat <option>. WAJIB dipakai, jangan el("option", ...).
+//
+// `el` hanya mengisi textContent. Untuk <option> tanpa atribut `value`,
+// peramban memakai TEKSNYA sebagai nilai — jadi pilihan penampung
+// "Pilih kelompok…" bernilai "Pilih kelompok…", bukan "". Akibatnya
+// `if (!sel.value)` tidak pernah benar: keadaan kosong tidak pernah
+// tampil dan teks penampung terkirim ke server sebagai id.
+export function opsi(nilai, teks, mati) {
+    const o = document.createElement("option");
+    o.value = nilai == null ? "" : String(nilai);
+    o.textContent = teks;
+    if (mati) o.disabled = true;
+    return o;
+}
+
 export function sel(teks, kelas) {
     const td = document.createElement("td");
     td.className = kelas || "";
@@ -81,7 +96,7 @@ export function pesan(elemen, teks, jenis) {
     const warna = jenis === "galat" ? "bg-galat-muda text-galat"
         : jenis === "sah" ? "bg-sah-muda text-sah"
         : "bg-belum-muda text-belum";
-    elemen.className = "rounded-md px-3 py-2 text-sm mb-4 " + warna;
+    elemen.className = "rounded-xl px-3 py-2 text-sm mb-4 " + warna;
     elemen.textContent = teks;
     elemen.hidden = false;
 }

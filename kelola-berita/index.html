@@ -16,7 +16,7 @@
   <div class="flex flex-wrap items-center gap-3 mb-4">
     <p class="text-sm text-tinta-redup flex-1 min-w-[16rem]">
       Berita yang diterbitkan tampil di halaman depan
-      <a href="/" class="text-biru underline underline-offset-2">kknlppm.unfari.ac.id</a>.
+      <a href="/" class="text-biru underline underline-offset-2">halaman depan</a>.
     </p>
     <output id="ringkasan" class="font-data text-xs text-tinta-redup whitespace-nowrap"></output>
     <button id="tombolTambah" class="tombol-utama">Tulis berita</button>
@@ -24,7 +24,7 @@
 
   <div id="pesan" hidden role="alert"></div>
 
-  <div class="bg-kertas rounded-lg shadow-kartu overflow-hidden">
+  <div class="bg-kertas rounded-2xl shadow-kartu overflow-hidden">
     <div class="overflow-auto max-h-[calc(100vh-15rem)]">
       <table class="register">
         <thead>
@@ -86,7 +86,7 @@
         <input id="fPenulis" name="penulis" class="medan" placeholder="mis. LPPM Unfari">
       </div>
 
-      <fieldset class="border border-garis rounded-md p-3">
+      <fieldset class="border border-garis rounded-xl p-3">
         <legend class="text-sm font-medium px-1">Tautan (opsional)</legend>
         <div class="space-y-3">
           <div>
@@ -221,8 +221,8 @@ if (requireLogin()) {
             const img = document.createElement("img");
             img.src = u;
             img.alt = "";
-            img.className = "w-full h-20 object-cover rounded border border-garis";
-            const buang = el("button", "absolute top-1 right-1 bg-kertas border border-garis rounded px-1.5 text-xs text-galat", "×");
+            img.className = "w-full h-20 object-cover rounded-lg border border-garis";
+            const buang = el("button", "absolute top-1 right-1 bg-kertas border border-garis rounded-full px-1.5 text-xs text-galat", "×");
             buang.type = "button";
             buang.setAttribute("aria-label", "Buang foto ini");
             buang.addEventListener("click", function () {

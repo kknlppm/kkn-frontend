@@ -25,6 +25,12 @@
 //  11. API berita mati TIDAK merusak sisa halaman depan — jscroot menelan
 //      galat jaringan tanpa memanggil callback, jadi ini gampang lolos dari
 //      perhatian sampai ada yang membuka situs saat backend sedang mati.
+//  12. Pilihan penampung di <select> bernilai "" — bukan teksnya. Ini gagal
+//      TANPA SUARA: keadaan kosong tidak pernah tampil dan teks penampung
+//      terkirim ke server sebagai id.
+//  13. Tidak ada halaman yang menggulung mendatar di layar ponsel. Ini juga
+//      diam: halamannya tampak utuh di layar lebar, dan di ponsel isinya
+//      cuma bergeser ke luar layar.
 //
 // Backend TIDAK perlu hidup: jawabannya dipalsukan lewat page.route, jadi uji
 // ini bisa dijalankan sendirian.
@@ -379,6 +385,81 @@ const BERITA = [
     await page.waitForTimeout(300);
     lapor(/tidak ditemukan/i.test(await page.textContent("#memuat") || ""),
         "slug tak dikenal diberi pesan");
+    await ctx.close();
+}
+
+// ---------- 14. Pilihan penampung bernilai "", bukan teksnya ----------
+//
+// `el("option", "", teks)` hanya mengisi textContent. Untuk <option> tanpa
+// atribut `value`, peramban memakai TEKSNYA sebagai nilai — jadi penampung
+// "Pilih kelompok…" bernilai "Pilih kelompok…". Akibatnya `if (!sel.value)`
+// tidak pernah benar: keadaan kosong Penilaian tidak pernah tampil, dan
+// teks penampung terkirim ke server sebagai group_id.
+{
+    const { ctx, page } = await halamanBaru(true);
+    const dipanggil = [];
+    await page.route("**/localhost:8090/**", (route) => {
+        const url = route.request().url();
+        dipanggil.push(url);
+        const isi = /academic-years/.test(url)
+            ? { data: ["2025-2026", "2024-2025"] }
+            : /groups/.test(url)
+                ? { data: [{ id: "g-1", kelompok: "20", lokasi: "Desa Cimekar" }], meta: { total: 1 } }
+                : { data: [], meta: { total: 0 } };
+        route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(isi) });
+    });
+    await page.goto(B + "/penilaian/", { waitUntil: "networkidle" });
+    await page.waitForTimeout(300);
+
+    const nilaiPenampung = await page.$eval("#pilihKelompok option", (o) => o.value);
+    lapor(nilaiPenampung === "", `penampung <option> bernilai "" (dapat ${JSON.stringify(nilaiPenampung)})`);
+
+    const kosongTampil = await page.locator("#kosong").isVisible();
+    lapor(kosongTampil, "keadaan kosong Penilaian tampil sebelum kelompok dipilih");
+
+    lapor(!dipanggil.some((u) => /group_id=./.test(u)),
+        "tidak ada panggilan anggota sebelum kelompok dipilih");
+
+    // Uji negatif: setelah kelompok betul dipilih, panggilannya HARUS terjadi.
+    // Tanpa ini, "tidak memanggil apa-apa" juga lulus dengan halaman rusak.
+    await page.selectOption("#pilihKelompok", "g-1");
+    await page.waitForTimeout(300);
+    lapor(dipanggil.some((u) => /group_id=g-1/.test(u)),
+        "kelompok yang dipilih benar-benar dimuat");
+    await ctx.close();
+}
+
+// ---------- 15. Tidak ada halaman yang menggulung mendatar di ponsel ----------
+//
+// Segmen tahun ajaran berisi "Semua" + lima tahun = 516px. Di layar 390px ia
+// mendorong SELURUH halaman, bukan menggulung sendiri — dan itu tidak terlihat
+// sama sekali dari layar lebar.
+{
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    await page.goto(B + "/404.html", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => {
+        localStorage.setItem("kkn_token", "token-uji-123");
+        localStorage.setItem("kkn_user", JSON.stringify({ name: "Uji", role: 1, role_name: "Admin" }));
+    });
+    await page.route("**/localhost:8090/**", (route) => route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ data: ["2025-2026", "2024-2025", "2023-2024", "2022-2023", "2021-2022"],
+                               meta: { total: 0, page: 1, total_pages: 1 } }) }));
+
+    for (const jalur of ["/data-kkn/", "/kelompok/", "/penilaian/", "/sertifikat/",
+                         "/data-induk/", "/pengaturan/", "/kelola-berita/", "/login/"]) {
+        // /login/ dilihat tanpa sesi — dengan sesi ia mengalihkan.
+        if (jalur === "/login/") await page.evaluate(() => localStorage.clear());
+        await page.goto(B + jalur, { waitUntil: "networkidle" });
+        await page.waitForTimeout(200);
+        const u = await page.evaluate(() => ({
+            gulung: document.documentElement.scrollWidth,
+            klien: document.documentElement.clientWidth,
+        }));
+        lapor(u.gulung <= u.klien + 1,
+            `${jalur} tidak menggulung mendatar di 390px (${u.gulung} vs ${u.klien})`);
+    }
     await ctx.close();
 }
 

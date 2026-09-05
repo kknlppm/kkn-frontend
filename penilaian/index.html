@@ -32,14 +32,14 @@
 
   <div id="pesan" hidden role="alert"></div>
 
-  <div id="kosong" class="bg-kertas rounded-lg shadow-kartu px-8 py-16 text-center">
+  <div id="kosong" class="bg-kertas rounded-2xl shadow-kartu px-8 py-16 text-center">
     <p class="text-tinta-redup">Pilih kelompok untuk mulai menilai.</p>
     <p class="text-sm text-tinta-redup mt-2">
       Nilai akhir dihitung sendiri dari lima aspek: rata-rata H, S, L, QP, dan QL.
     </p>
   </div>
 
-  <div id="wadahTabel" hidden class="bg-kertas rounded-lg shadow-kartu overflow-hidden">
+  <div id="wadahTabel" hidden class="bg-kertas rounded-2xl shadow-kartu overflow-hidden">
     <div class="overflow-auto max-h-[calc(100vh-16rem)]">
       <table class="register">
         <thead>
@@ -69,7 +69,7 @@ import { getJSON, postJSON } from "/assets/js/jscroot/api.js";
 import { backend } from "/assets/js/config.js";
 import { requireLogin, tokenHeader } from "/assets/js/auth.js";
 import { pasang } from "/assets/js/nav.js";
-import { el, sel, deretNilai, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
+import { el, sel, opsi, deretNilai, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
 
 if (requireLogin()) {
     pasang("Penilaian KKN", "Lima aspek · H · S · L · QP · QL");
@@ -201,7 +201,7 @@ if (requireLogin()) {
     function muatKelompok() {
         const sebelumnya = selKel.value;
         kosongkan(selKel);
-        selKel.appendChild(el("option", "", "Pilih kelompok…"));
+        selKel.appendChild(opsi("", "Pilih kelompok…"));
 
         const p = new URLSearchParams({ limit: "200" });
         if (selTahun.value) p.set("tahun_ajaran", selTahun.value);
@@ -209,14 +209,12 @@ if (requireLogin()) {
             if (!sehat(hasil, elPesan)) { muatAnggota(); return; }
             const daftar = (hasil.data || {}).data || [];
             daftar.forEach(function (g) {
-                const o = el("option", "",
+                selKel.appendChild(opsi(g.id,
                     String(g.kelompok).replace(/^kelompok\s+/i, "Kelompok ") +
-                    (g.lokasi ? " — " + g.lokasi : ""));
-                o.value = g.id;
-                selKel.appendChild(o);
+                    (g.lokasi ? " — " + g.lokasi : "")));
             });
             if (!daftar.length) {
-                selKel.appendChild(el("option", "", "Tidak ada kelompok di tahun ini"));
+                selKel.appendChild(opsi("", "Tidak ada kelompok di tahun ini", true));
             }
             // Kalau kelompok yang sedang dibuka masih ada di tahun yang baru
             // dipilih, ia tetap terbuka — berpindah tahun lalu kehilangan
@@ -235,9 +233,7 @@ if (requireLogin()) {
             if (hasil && hasil.status === 200) {
                 const daftar = (hasil.data || {}).data || [];
                 daftar.forEach(function (ta) {
-                    const o = el("option", "", ta);
-                    o.value = ta;
-                    selTahun.appendChild(o);
+                    selTahun.appendChild(opsi(ta, ta));
                 });
                 // Tahun terbaru dipilih lebih dulu — itu yang sedang dikerjakan.
                 if (daftar.length) selTahun.value = daftar[0];

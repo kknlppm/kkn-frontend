@@ -10,24 +10,42 @@
 
    Tidak memakai pustaka komponen. Yang dibutuhkan cuma sedikit, dan
    pustaka bawaan membuat setiap aplikasi tampak sama.
+
+   SATU SUARA DENGAN HALAMAN DEPAN. Berkasnya terpisah (beranda.css gelap,
+   ini terang) tapi keduanya harus terbaca sebagai satu produk. Yang dibagi
+   ternyata sudah ada sejak awal: hurufnya sama (Archivo + Azeret Mono), dan
+   permukaan terang di halaman depan — mockup sertifikat di hero — dicat
+   dengan token yang PERSIS sama dengan di sini (#fff, #0B1B2B, #4A5D70,
+   #5D7186, #CFDAE4, #1074BA). Jadi warna dan huruf tidak diubah.
+
+   Yang berbeda dan disamakan di sini adalah watak dan bentuknya:
+     · berat judul  — halaman depan memakai 400 pada 40-60px dan 500 pada
+                      ukuran kecil (.nav__brand, .btn); di sini dulu 700
+     · sumbu lebar  — halaman depan memakai lebar wajar; di sini dulu wdth 112
+     · pelacakan    — -0.02em, mengikuti .nav__brand dan .sertifikat__judul
+     · lengkung     — .tabs dan .btn di sana berbentuk pil (999px), kartunya
+                      12-22px; di sini dulu 6-8px di semuanya
    ────────────────────────────────────────────────────────────── */
 
 @layer base {
     html {
-        /* Archivo punya sumbu lebar; judul memakai lebar melebar. */
+        /* Archivo punya sumbu lebar. Halaman depan memakai lebar WAJAR di
+           seluruh halaman; supaya keduanya satu suara, di sini juga. */
         font-variation-settings: "wdth" 100;
     }
 
     body {
         @apply bg-latar text-tinta font-teks antialiased;
+        /* 1.55 — sama dengan body halaman depan. */
+        line-height: 1.55;
     }
 
     /* Fokus papan ketik harus selalu terlihat. Sistem ini dipakai dosen
        yang mengisi nilai berderet-deret dengan Tab. */
     :focus-visible {
         outline: 2px solid theme("colors.biru.DEFAULT");
-        outline-offset: 2px;
-        border-radius: 2px;
+        outline-offset: 3px;
+        border-radius: 4px;
     }
 }
 
@@ -39,25 +57,30 @@
         @apply fixed inset-x-0 top-0 h-[3px] bg-biru z-50;
     }
 
+    /* Berat 500 dan pelacakan -0.02em: itu yang dipakai halaman depan pada
+       teks seukuran ini (.nav__brand 18px/500/-0.02em, .sertifikat__judul
+       20px/-0.02em). Yang 400 di sana hanya berlaku pada 40-60px. */
     .judul-halaman {
-        @apply font-judul font-bold tracking-[-0.01em];
-        font-variation-settings: "wdth" 112;
+        @apply font-judul font-medium tracking-[-0.02em];
     }
 
     .eyebrow {
         @apply font-data text-mikro uppercase text-tinta-samar;
+        /* .12em — sama dengan .kaca__judul di halaman depan. */
+        letter-spacing: 0.12em;
     }
 
     /* ── kendali ── */
     .medan {
-        @apply w-full bg-kertas border border-garis rounded-md px-3 py-2
+        @apply w-full bg-kertas border border-garis rounded-[10px] px-3 py-2
                text-sm placeholder:text-tinta-samar
                focus:border-biru focus:ring-0;
     }
 
+    /* Pil, tinggi 38px, berat 500 — .btn--sm halaman depan apa adanya. */
     .tombol {
-        @apply inline-flex items-center justify-center gap-2 rounded-md
-               px-4 py-2 text-sm font-medium transition-colors
+        @apply inline-flex items-center justify-center gap-2 rounded-full
+               h-[38px] px-5 text-sm font-medium transition-colors
                disabled:opacity-40 disabled:pointer-events-none;
     }
     .tombol-utama {
@@ -68,12 +91,17 @@
     }
 
     /* Segmen tahun ajaran. Tahun ajarannya cuma LIMA — menyembunyikannya
-       di dalam dropdown menyamarkan sesuatu yang kecil dan selesai. */
+       di dalam dropdown menyamarkan sesuatu yang kecil dan selesai.
+
+       Lima tahun + "Semua" berukuran 516px; di ponsel 390px itu MENDORONG
+       seluruh halaman menggulung mendatar kalau segmennya tidak menggulung
+       sendiri. `max-w-full` menahannya di dalam layar, `shrink-0` menjaga
+       tombolnya tidak diperas jadi tak terbaca. */
     .segmen {
-        @apply inline-flex rounded-md border border-garis bg-kertas p-0.5;
+        @apply inline-flex max-w-full overflow-x-auto rounded-full border border-garis bg-kertas p-0.5;
     }
     .segmen > button {
-        @apply font-data text-xs px-2.5 py-1.5 rounded text-tinta-redup
+        @apply shrink-0 font-data text-xs px-3 py-2 rounded-full text-tinta-redup
                transition-colors whitespace-nowrap;
     }
     .segmen > button[aria-pressed="true"] {
@@ -81,6 +109,32 @@
     }
     .segmen > button:not([aria-pressed="true"]):hover {
         @apply text-biru bg-biru-muda;
+    }
+
+    /* Baris tab lebih lebar dari layar ponsel: tujuh tab butuh 596px, dan
+       yang terlihat cuma empat. Tanpa penanda, "Data induk", "Berita", dan
+       "Pengaturan" tidak terlihat ADA — bukan sekadar sulit dijangkau.
+       Gradiennya dipasang nav.js hanya di sisi yang memang masih ada isinya. */
+    .nav-gulung {
+        @apply relative;
+    }
+    .nav-gulung::before,
+    .nav-gulung::after {
+        content: "";
+        @apply pointer-events-none absolute inset-y-0 w-10 opacity-0
+               transition-opacity duration-150;
+    }
+    .nav-gulung::before {
+        @apply left-0;
+        background: linear-gradient(270deg, rgba(255, 255, 255, 0), theme("colors.kertas"));
+    }
+    .nav-gulung::after {
+        @apply right-0;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0), theme("colors.kertas"));
+    }
+    .nav-gulung.geser-kiri::before,
+    .nav-gulung.geser-kanan::after {
+        @apply opacity-100;
     }
 
     /* Tab navigasi. Yang aktif ditandai garis biru di kakinya — sama
@@ -118,7 +172,7 @@
        dimatikan — dosen mengetik angka, bukan mengklik panah 80 kali. */
     .kotak-nilai {
         @apply w-14 text-center font-data text-sm bg-kertas
-               border border-garis rounded px-1 py-1
+               border border-garis rounded-lg px-1 py-1
                focus:border-biru focus:ring-0;
         -moz-appearance: textfield;
     }
@@ -150,7 +204,7 @@
 
     /* ── penanda status ── */
     .tanda {
-        @apply inline-flex items-center rounded px-1.5 py-0.5 font-data text-mikro uppercase;
+        @apply inline-flex items-center rounded-full px-2 py-0.5 font-data text-mikro uppercase;
     }
     .tanda.is-sah { @apply bg-sah-muda text-sah; }
     .tanda.is-belum { @apply bg-belum-muda text-belum; }

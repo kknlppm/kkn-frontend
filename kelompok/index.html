@@ -26,7 +26,7 @@
 
   <div id="pesan" hidden role="alert"></div>
 
-  <div class="bg-kertas rounded-lg shadow-kartu overflow-hidden">
+  <div class="bg-kertas rounded-2xl shadow-kartu overflow-hidden">
     <div class="overflow-auto max-h-[calc(100vh-15rem)]">
       <table class="register">
         <thead>
@@ -96,7 +96,7 @@ import { backend } from "/assets/js/config.js";
 import { requireLogin, tokenHeader } from "/assets/js/auth.js";
 import { pasang } from "/assets/js/nav.js";
 import { buat as buatLaci } from "/assets/js/laci.js";
-import { el, sel, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
+import { el, sel, opsi, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
 
 if (requireLogin()) {
     pasang("Kelompok KKN");
@@ -165,9 +165,7 @@ if (requireLogin()) {
             // Pilihan opsional: kalau gagal, formulirnya tetap bisa dibuka.
             if (!hasil || hasil.status !== 200) return;
             ((hasil.data || {}).data || []).forEach(function (d) {
-                const o = el("option", "", d.name + (d.nidn ? " · " + d.nidn : ""));
-                o.value = d.id;
-                pilihan.appendChild(o);
+                pilihan.appendChild(opsi(d.id, d.name + (d.nidn ? " · " + d.nidn : "")));
             });
         }, ...tokenHeader());
     }
