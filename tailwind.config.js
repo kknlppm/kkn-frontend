@@ -42,7 +42,12 @@ module.exports = {
             // Kertas dingin bersemu biru — sengaja bukan krem.
             kertas: "#FFFFFF",
             latar: "#E9EFF4",
-            garis: { DEFAULT: "#CFDAE4", tipis: "#E3EAF1" },
+            // `garis` dan `tipis` memisahkan — itu hiasan, dan WCAG tidak
+            // menuntut apa-apa darinya. `kendali` MEMBENTUK: ia satu-satunya
+            // penanda di mana kotak isian berakhir, dan kotaknya duduk di
+            // atas kartu putih. WCAG 1.4.11 minta 3:1 untuk itu; #CFDAE4
+            // hanya 1,42. #8195AB = 3,08 di kertas, masih sekeluarga sejuk.
+            garis: { DEFAULT: "#CFDAE4", tipis: "#E3EAF1", kendali: "#8195AB" },
 
             // Penanda status dipakai sebagai teks 11px huruf besar DI ATAS
             // latar mudanya sendiri, jadi ambangnya 4,5 — bukan 3. Nilai

@@ -72,7 +72,7 @@
 
     /* ── kendali ── */
     .medan {
-        @apply w-full bg-kertas border border-garis rounded-[10px] px-3 py-2
+        @apply w-full bg-kertas border border-garis-kendali rounded-[10px] px-3 py-2
                text-sm placeholder:text-tinta-samar
                focus:border-biru focus:ring-0;
     }
@@ -87,7 +87,7 @@
         @apply tombol bg-biru text-kertas hover:bg-biru-dalam;
     }
     .tombol-halus {
-        @apply tombol border border-garis bg-kertas text-tinta hover:border-biru hover:text-biru;
+        @apply tombol border border-garis-kendali bg-kertas text-tinta hover:border-biru hover:text-biru;
     }
 
     /* Segmen tahun ajaran. Tahun ajarannya cuma LIMA — menyembunyikannya
@@ -98,7 +98,7 @@
        sendiri. `max-w-full` menahannya di dalam layar, `shrink-0` menjaga
        tombolnya tidak diperas jadi tak terbaca. */
     .segmen {
-        @apply inline-flex max-w-full overflow-x-auto rounded-full border border-garis bg-kertas p-0.5;
+        @apply inline-flex max-w-full overflow-x-auto rounded-full border border-garis-kendali bg-kertas p-0.5;
     }
     .segmen > button {
         @apply shrink-0 font-data text-xs px-3 py-2 rounded-full text-tinta-redup
@@ -172,7 +172,7 @@
        dimatikan — dosen mengetik angka, bukan mengklik panah 80 kali. */
     .kotak-nilai {
         @apply w-14 text-center font-data text-sm bg-kertas
-               border border-garis rounded-lg px-1 py-1
+               border border-garis-kendali rounded-lg px-1 py-1
                focus:border-biru focus:ring-0;
         -moz-appearance: textfield;
     }
@@ -226,6 +226,44 @@
     .deret-nilai i[data-kosong="1"] {
         @apply bg-garis;
         height: 2px !important;
+    }
+
+/* Kolom pertama menempel di kiri.
+       Di ponsel tabel ini SELALU lebih lebar dari layar — 550px lawan 390px —
+       jadi Nilai dan Sertifikat hanya terlihat setelah digeser ke kanan, dan
+       begitu digeser barisnya jadi anonim. NIM (atau nama kelompok) tetap
+       tertinggal supaya masih jelas baris siapa yang sedang dibaca.
+       Di layar lebar tabelnya muat, jadi aturan ini tidak berbuat apa-apa. */
+    .register thead th:first-child,
+    .register tbody td:first-child {
+        @apply sticky left-0;
+    }
+    .register thead th:first-child {
+        @apply z-20 bg-latar;
+    }
+    .register tbody td:first-child {
+        @apply z-[5] bg-kertas;
+    }
+    .register tbody tr:hover td:first-child {
+        /* Tanpa ini sel yang menempel tetap putih saat barisnya disinggahi,
+           dan barisnya terbaca terpotong dua. */
+        background-color: color-mix(in srgb, theme("colors.biru.muda") 40%, theme("colors.kertas"));
+    }
+    /* Batas tipis penanda bahwa isinya bersambung ke kanan. */
+    .register thead th:first-child::after,
+    .register tbody td:first-child::after {
+        content: "";
+        @apply pointer-events-none absolute inset-y-0 right-0 w-px bg-garis;
+    }
+
+    /* Sasaran sentuh. Di tetikus kerapatan ini disengaja; di jari, 32px
+       terlalu kecil — pedoman peron minta 44. Dibedakan lewat jenis
+       penunjuknya, bukan lewat lebar layar: layar lebar bisa juga disentuh. */
+    @media (pointer: coarse) {
+        .tombol { @apply h-11; }
+        .segmen > button { @apply py-3.5; }
+        .medan { @apply min-h-11; }
+        .tab-nav { @apply py-3.5; }
     }
 
     .huruf-mutu {

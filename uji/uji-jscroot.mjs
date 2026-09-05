@@ -31,6 +31,11 @@
 //  13. Tidak ada halaman yang menggulung mendatar di layar ponsel. Ini juga
 //      diam: halamannya tampak utuh di layar lebar, dan di ponsel isinya
 //      cuma bergeser ke luar layar.
+//  14. Kolom pertama tabel tetap terlihat setelah digeser ke kanan — di
+//      ponsel tabelnya SELALU lebih lebar dari layar, dan tanpa itu barisnya
+//      jadi anonim tepat saat Nilai dan Sertifikat akhirnya terlihat.
+//  15. Sasaran sentuh 44px HANYA pada penunjuk kasar. Kerapatan di tetikus
+//      disengaja; kalau aturannya bocor ke sana, tabel jadi renggang.
 //
 // Backend TIDAK perlu hidup: jawabannya dipalsukan lewat page.route, jadi uji
 // ini bisa dijalankan sendirian.
@@ -461,6 +466,74 @@ const BERITA = [
             `${jalur} tidak menggulung mendatar di 390px (${u.gulung} vs ${u.klien})`);
     }
     await ctx.close();
+}
+
+// ---------- 16. Kolom pertama tetap terlihat setelah tabel digeser ----------
+{
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    await page.goto(B + "/404.html", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => {
+        localStorage.setItem("kkn_token", "token-uji-123");
+        localStorage.setItem("kkn_user", JSON.stringify({ name: "Uji", role: 1, role_name: "Admin" }));
+    });
+    await page.route("**/localhost:8090/**", (route) => route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ data: [{ id: "p-1", nim: "21900000", name: "Rizki Ramadhan",
+            kelompok: "20", tahun_ajaran: "2025-2026", nilai: 82, huruf: "A", has_cert: true }],
+            meta: { total: 1, page: 1, total_pages: 1 } }) }));
+    await page.goto(B + "/data-kkn/", { waitUntil: "networkidle" });
+    await page.waitForTimeout(300);
+
+    const hasil = await page.evaluate(() => {
+        const gulung = document.querySelector(".overflow-auto");
+        const nim = document.querySelector("#isiTabel tr td:first-child");
+        const sebelum = nim.getBoundingClientRect().left;
+        gulung.scrollLeft = 9999;
+        const sesudah = nim.getBoundingClientRect().left;
+        return { meluber: gulung.scrollWidth > gulung.clientWidth,
+                 sebelum: Math.round(sebelum), sesudah: Math.round(sesudah),
+                 teks: nim.textContent.trim() };
+    });
+    // Uji ini hanya berarti kalau tabelnya memang meluber. Kalau tidak,
+    // ia lulus tanpa membuktikan apa pun — jadi itu dilaporkan juga.
+    lapor(hasil.meluber, `tabel register memang meluber di 390px (prasyarat uji)`);
+    lapor(hasil.sesudah >= 0 && hasil.teks === "21900000",
+        `NIM tetap terlihat setelah digeser (kiri ${hasil.sebelum} -> ${hasil.sesudah})`);
+    await ctx.close();
+}
+
+// ---------- 17. Sasaran sentuh 44px, hanya pada penunjuk kasar ----------
+{
+    const ukur = async (opts) => {
+        const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, ...opts });
+        const page = await ctx.newPage();
+        await page.goto(B + "/404.html", { waitUntil: "domcontentloaded" });
+        await page.evaluate(() => {
+            localStorage.setItem("kkn_token", "token-uji-123");
+            localStorage.setItem("kkn_user", JSON.stringify({ name: "Uji", role: 1, role_name: "Admin" }));
+        });
+        await page.route("**/localhost:8090/**", (route) => route.fulfill({
+            status: 200, contentType: "application/json",
+            body: JSON.stringify({ data: ["2025-2026"], meta: { total: 0, page: 1, total_pages: 1 } }) }));
+        await page.goto(B + "/data-kkn/", { waitUntil: "networkidle" });
+        await page.waitForTimeout(300);
+        const r = await page.evaluate(() => {
+            const t = (s) => { const e = document.querySelector(s);
+                return e ? Math.round(e.getBoundingClientRect().height) : 0; };
+            return { kasar: matchMedia("(pointer: coarse)").matches,
+                     segmen: t(".segmen > button"), medan: t(".medan"), tombol: t(".tombol-halus") };
+        });
+        await ctx.close();
+        return r;
+    };
+    const jari = await ukur({ hasTouch: true, isMobile: true });
+    const tetikus = await ukur({});
+    lapor(jari.kasar && jari.segmen >= 44 && jari.medan >= 44 && jari.tombol >= 44,
+        `sasaran sentuh >= 44px di jari (segmen ${jari.segmen}, medan ${jari.medan}, tombol ${jari.tombol})`);
+    // Uji negatif: aturannya TIDAK boleh bocor ke tetikus.
+    lapor(!tetikus.kasar && tetikus.segmen < 44 && tetikus.tombol < 44,
+        `kerapatan tetikus tetap (segmen ${tetikus.segmen}, tombol ${tetikus.tombol})`);
 }
 
 await browser.close();
