@@ -20,6 +20,7 @@
        — menyembunyikannya di dropdown menyamarkan sesuatu yang kecil. -->
   <div class="flex flex-wrap items-center gap-3 mb-4">
     <div id="segmenTahun" class="segmen" role="group" aria-label="Tahun ajaran"></div>
+    <div id="segmenBayar" class="segmen" role="group" aria-label="Status pembayaran" hidden></div>
 
     <div class="flex-1 min-w-[14rem]">
       <label for="cari" class="sr-only">Cari peserta</label>
@@ -43,6 +44,7 @@
             <th>Kelompok</th>
             <th class="hidden md:table-cell">TA</th>
             <th class="hidden xl:table-cell">Judul KKN</th>
+            <th class="hidden sm:table-cell">Bayar</th>
             <th><span class="text-tinta-redup">H·S·L·QP·QL</span></th>
             <th class="text-right">Nilai</th>
             <th>Sertifikat</th>
@@ -60,14 +62,43 @@
   </nav>
 </main>
 
+<!-- Laci pembayaran. Hanya digambar untuk peran yang berhak; backend juga
+     menegakkannya (SaveParticipation membatasi peran pembayaran hanya boleh
+     menyentuh status_bayar). -->
+<div id="tirai" class="tirai" hidden></div>
+<aside id="laci" class="laci" hidden aria-labelledby="judulLaci" role="dialog" aria-modal="true">
+  <form id="formBayar" class="flex flex-col h-full" novalidate>
+    <div class="px-5 py-4 border-b border-garis">
+      <h2 id="judulLaci" class="judul-halaman text-lg">Status pembayaran</h2>
+      <p id="siapa" class="text-sm text-tinta-redup mt-0.5"></p>
+    </div>
+    <div class="flex-1 overflow-auto px-5 py-4 space-y-4">
+      <div id="pesanLaci" hidden role="alert"></div>
+      <div>
+        <label for="fBayar" class="block text-sm font-medium mb-1.5">Status</label>
+        <select id="fBayar" name="status_bayar" class="medan"></select>
+      </div>
+      <div>
+        <label for="fKet" class="block text-sm font-medium mb-1.5">Catatan</label>
+        <textarea id="fKet" name="ket" class="medan" rows="3"
+                  placeholder="Wajib diisi kalau pembayarannya sebagian."></textarea>
+      </div>
+    </div>
+    <div class="px-5 py-4 border-t border-garis flex gap-2 justify-end">
+      <button type="button" id="tombolBatal" class="tombol-halus">Batal</button>
+      <button type="submit" id="tombolSimpan" class="tombol-utama">Simpan</button>
+    </div>
+  </form>
+</aside>
+
 <script type="module">
-import { getJSON } from "/assets/js/jscroot/api.js";
-import { getValue } from "/assets/js/jscroot/element.js";
+import { getJSON, postJSON } from "/assets/js/jscroot/api.js";
 import { getQueryString } from "/assets/js/jscroot/url.js";
-import { backend } from "/assets/js/config.js";
-import { requireLogin, tokenHeader } from "/assets/js/auth.js";
+import { backend, BAYAR, PERAN } from "/assets/js/config.js";
+import { requireLogin, tokenHeader, getUser } from "/assets/js/auth.js";
 import { pasang } from "/assets/js/nav.js";
-import { el, sel, tanda, deretNilai, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
+import { buat as buatLaci } from "/assets/js/laci.js";
+import { el, sel, opsi, tanda, deretNilai, pesan, sembunyikan, kosongkan, sehat } from "/assets/js/ui.js";
 
 if (requireLogin()) {
     pasang("Register KKN");
@@ -80,9 +111,29 @@ if (requireLogin()) {
     const inpCari = document.getElementById("cari");
     const btnPrev = document.getElementById("sebelumnya");
     const btnNext = document.getElementById("berikutnya");
-    const KOLOM = 9;
+    const KOLOM = 10;
 
     let halaman = 1, totalHalaman = 1, tahun = "";
+
+    // Peran yang boleh menyentuh pembayaran. Ini KENYAMANAN — backend
+    // menegakkannya di SaveParticipation, dan peran pembayaran di sana hanya
+    // boleh mengubah status_bayar, bukan yang lain.
+    const u = getUser() || {};
+    const bolehBayar = u.role === PERAN.ADMIN || u.role === PERAN.PEMBAYARAN;
+
+    // ?bayar=0|1|2 menyaring status pembayaran. Petugas pembayaran mendarat
+    // langsung di ?bayar=0 — pekerjaannya persis daftar yang belum bayar.
+    let bayar = (function () {
+        // getQueryString() jscroot TIDAK menerima argumen: ia mengembalikan
+        // Proxy yang diindeks, jadi `getQueryString("bayar")` mengembalikan
+        // Proxy-nya sendiri — truthy, dan diam-diam salah. Dua pemakaian lain
+        // di repo ini (verifikasi, berita) sudah memakai bentuk yang benar.
+        const v = getQueryString().bayar;
+        return v === "0" || v === "1" || v === "2" ? v : "";
+    })();
+
+    const laci = bolehBayar ? buatLaci("laci", "tirai", "tombolBatal") : null;
+    let sedang = null;
 
     function barisPesan(teks) {
         const tr = el("tr");
@@ -94,6 +145,9 @@ if (requireLogin()) {
 
     function gambarBaris(r) {
         const tr = el("tr");
+        // Disimpan supaya satu baris bisa digambar ulang sendiri tanpa
+        // memuat ulang seluruh daftar.
+        r.__tr = tr;
         tr.appendChild(sel(r.nim, "kode whitespace-nowrap"));
 
         const tdNama = sel(r.name, "font-medium");
@@ -114,6 +168,7 @@ if (requireLogin()) {
         tdJudul.title = r.judul_kkn || "";
         tr.appendChild(tdJudul);
 
+        tr.appendChild(selBayar(r));
         tr.appendChild(deretNilai(r));
 
         const tdNilai = el("td", "text-right whitespace-nowrap");
@@ -129,6 +184,37 @@ if (requireLogin()) {
         return tr;
     }
 
+    // Status bayar digambar sebagai penanda; kalau perannya berhak, penanda
+    // itu sekaligus tombol. Datanya SUDAH dikirim backend di tiap baris sejak
+    // awal — sampai 5 September 2026 ia hanya tidak pernah ditampilkan.
+    function selBayar(r) {
+        const b = BAYAR.find(function (x) { return x.nilai === (r.status_bayar || 0); }) || BAYAR[0];
+        const td = el("td", "hidden sm:table-cell whitespace-nowrap");
+        if (!bolehBayar) {
+            td.appendChild(el("span", "tanda is-" + b.tanda, b.teks));
+            if (r.ket) td.title = r.ket;
+            return td;
+        }
+        const tombol = el("button", "tanda is-" + b.tanda + " hover:ring-1 hover:ring-bata", b.teks);
+        tombol.type = "button";
+        tombol.title = r.ket ? r.ket + " — klik untuk mengubah" : "Klik untuk mengubah";
+        tombol.addEventListener("click", function () { bukaBayar(r); });
+        td.appendChild(tombol);
+        return td;
+    }
+
+    function bukaBayar(r) {
+        sedang = r;
+        document.getElementById("siapa").textContent = r.nim + " · " + r.name;
+        const selBayarEl = document.getElementById("fBayar");
+        kosongkan(selBayarEl);
+        BAYAR.forEach(function (b) { selBayarEl.appendChild(opsi(b.nilai, b.teks)); });
+        selBayarEl.value = String(r.status_bayar || 0);
+        document.getElementById("fKet").value = r.ket || "";
+        sembunyikan(document.getElementById("pesanLaci"));
+        laci.buka();
+    }
+
     function muat() {
         sembunyikan(elPesan);
         kosongkan(isi);
@@ -136,6 +222,7 @@ if (requireLogin()) {
 
         const p = new URLSearchParams({ page: String(halaman), limit: "50" });
         if (tahun) p.set("tahun_ajaran", tahun);
+        if (bayar) p.set("bayar", bayar);
         if (inpCari.value.trim()) p.set("q", inpCari.value.trim());
 
         getJSON(backend.kkn.participations + "?" + p.toString(), jawabanMuat, ...tokenHeader());
@@ -205,6 +292,80 @@ if (requireLogin()) {
         jeda = setTimeout(function () { halaman = 1; muat(); }, 350);
     });
 
+    // ── segmen pembayaran ──
+    // Digambar hanya untuk peran yang mengurusnya. Untuk yang lain, kolom
+    // Bayar tetap terlihat tapi tidak bisa disaring — menawarkan penyaring
+    // yang tidak dipakai siapa pun hanya menambah yang harus dibaca.
+    function pasangSegmenBayar() {
+        if (!bolehBayar) return;
+        const seg = document.getElementById("segmenBayar");
+        seg.hidden = false;
+        const pilihan = [{ nilai: "", teks: "Semua bayar" }].concat(
+            BAYAR.map(function (b) { return { nilai: String(b.nilai), teks: b.teks }; }));
+        pilihan.forEach(function (o) {
+            const b = el("button", "", o.teks);
+            b.type = "button";
+            b.dataset.nilai = o.nilai;
+            b.setAttribute("aria-pressed", String(bayar === o.nilai));
+            b.addEventListener("click", function () {
+                bayar = o.nilai;
+                halaman = 1;
+                seg.querySelectorAll("button").forEach(function (x) {
+                    x.setAttribute("aria-pressed", String(x.dataset.nilai === bayar));
+                });
+                muat();
+            });
+            seg.appendChild(b);
+        });
+    }
+
+    if (bolehBayar) {
+        document.getElementById("formBayar").addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            if (!sedang) return;
+            const elPesanLaci = document.getElementById("pesanLaci");
+            const status = Number(document.getElementById("fBayar").value);
+            const ket = document.getElementById("fKet").value.trim();
+            // Pembayaran sebagian tanpa catatan tidak bisa ditelusuri nanti:
+            // tidak ada yang tahu berapa yang sudah masuk.
+            if (status === 1 && !ket) {
+                pesan(elPesanLaci, "Pembayaran sebagian wajib disertai catatan.", "galat");
+                return;
+            }
+            const tombol = document.getElementById("tombolSimpan");
+            tombol.disabled = true;
+            postJSON(backend.kkn.participation(encodeURIComponent(sedang.id)),
+                { status_bayar: status, ketua: !!sedang.ketua, ket: ket },
+                function (hasil) {
+                    tombol.disabled = false;
+                    if (!sehat(hasil, elPesanLaci)) return;
+                    sedang.status_bayar = status;
+                    sedang.ket = ket;
+                    laci.tutup();
+
+                    // Diperbarui DI TEMPAT, bukan dengan memuat ulang daftar:
+                    // memuat ulang membuang posisi gulung, dan petugas yang
+                    // mengerjakan sepuluh orang berturut-turut harus mencari
+                    // tempatnya lagi sepuluh kali.
+                    const tr = sedang.__tr;
+                    if (!tr || !tr.parentNode) return;
+                    if (bayar !== "" && bayar !== String(status)) {
+                        // Barisnya tidak lagi cocok dengan saringan yang aktif
+                        // — ia memang harus pergi, dan hitungannya ikut turun.
+                        tr.remove();
+                        const sisa = isi.querySelectorAll("tr").length;
+                        if (!sisa) { kosongkan(isi); isi.appendChild(barisPesan("Tidak ada peserta yang cocok.")); }
+                        pesan(elPesan, sedang.name + " ditandai " +
+                            (BAYAR.find(function (x) { return x.nilai === status; }) || BAYAR[0]).teks.toLowerCase() +
+                            " dan keluar dari saringan ini.", "sah");
+                        return;
+                    }
+                    tr.replaceWith(gambarBaris(sedang));
+                }, ...tokenHeader());
+        });
+    }
+
+    pasangSegmenBayar();
     muatTahun();
     muat();
 }

@@ -33,10 +33,13 @@ export const backend = {
         login: asal + "/auth/login",
         logout: asal + "/auth/logout",
         me: asal + "/auth/me",
+        sandi: asal + "/auth/password",
     },
 
     // Data induk — hanya admin.
     master: {
+        students: asal + "/api/students",
+        student: (idnya) => asal + "/api/students/" + idnya,
         users: asal + "/api/users",
         user: (idnya) => asal + "/api/users/" + idnya,
         lecturers: asal + "/api/lecturers",
@@ -89,6 +92,14 @@ export const id = {
     pesan: "pesan",
     isi: "isi",
 };
+
+// Status pembayaran, disamakan dengan kolom `status_bayar` aplikasi lama.
+// Nilainya 0/1/2 dan itu yang tersimpan di basis data — labelnya di sini.
+export const BAYAR = [
+    { nilai: 0, teks: "Belum bayar", tanda: "kosong" },
+    { nilai: 1, teks: "Sebagian",    tanda: "belum"  },
+    { nilai: 2, teks: "Lunas",       tanda: "sah"    },
+];
 
 // Peran, disamakan dengan kolom `ulevel` aplikasi lama.
 export const PERAN = {

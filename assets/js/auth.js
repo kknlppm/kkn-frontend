@@ -80,13 +80,22 @@ export function requireGuest() {
 //
 // Namanya dulu `landing()`. Diganti saat halaman depan publik lahir di `/` —
 // dua hal berbeda tidak boleh memakai kata yang sama di repo yang sama.
+// Tiap peran mendarat di PEKERJAANNYA, bukan di daftar peserta.
+//
+// Sampai 5 September 2026 semua orang dikirim ke /data-kkn/. Dosen hanya
+// punya dua tab dan pekerjaannya di Penilaian; validasi LPPM juga dua tab dan
+// pekerjaannya di Sertifikat — keduanya mendarat satu klik meleset setiap
+// kali masuk. Petugas pembayaran dikirim ke "/data-kkn/?bayar=1", dan `bayar`
+// tidak pernah dibaca halaman itu: ia mendarat di daftar 1.706 orang tanpa
+// penyaring apa pun.
 export function tujuanSetelahMasuk() {
     const u = getUser() || {};
     switch (u.role) {
-        case PERAN.PEMBAYARAN: return "/data-kkn/?bayar=1";
+        // ?bayar=0 = "belum bayar", persis pekerjaan yang menunggunya.
+        case PERAN.PEMBAYARAN: return "/data-kkn/?bayar=0";
+        case PERAN.DOSEN: return "/penilaian/";
+        case PERAN.VALIDASI_LPPM: return "/sertifikat/";
         case PERAN.MAHASISWA: return "/data-kkn/";
-        case PERAN.DOSEN: return "/data-kkn/";
-        case PERAN.VALIDASI_LPPM: return "/data-kkn/";
         default: return "/data-kkn/";
     }
 }

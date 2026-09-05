@@ -39,6 +39,13 @@
 //  16. Sidebar memuat SEMUA tujuan peran sekaligus, tanpa digulung. Baris tab
 //      lama butuh 596px sedangkan ponsel memuat 350px — tiga tujuan terakhir
 //      tidak terlihat ADA. Itu yang diganti, jadi itu yang dijaga.
+//  17. SETIAP peran punya tombol Keluar. Peran bertujuan tunggal tidak diberi
+//      sidebar, dan Keluar tinggal di kaki sidebar — cacat yang lahir bersama
+//      sidebar itu sendiri, dan tidak terlihat kalau hanya diuji sebagai admin.
+//  18. Tiap peran mendarat di PEKERJAANNYA, dan ?bayar= benar-benar dibaca.
+//      `getQueryString()` jscroot tidak menerima argumen: memanggilnya dengan
+//      argumen mengembalikan Proxy yang truthy, jadi penyaringnya diam-diam
+//      tidak terpasang dan petugas melihat 1.706 baris, bukan 17.
 //
 // Backend TIDAK perlu hidup: jawabannya dipalsukan lewat page.route, jadi uji
 // ini bisa dijalankan sendirian.
@@ -588,6 +595,88 @@ const BERITA = [
     // Peran bertujuan tunggal tidak digambari sidebar sama sekali.
     const mhs = await lihat(3, { width: 1440, height: 900 });
     lapor(!mhs.ada, "mahasiswa tidak diberi sidebar untuk satu tautan");
+}
+
+// ---------- 19. Setiap peran bisa keluar ----------
+{
+    for (const [nama, peran] of [["admin", 1], ["pembayaran", 2], ["mahasiswa", 3],
+                                 ["dosen", 4], ["validasi LPPM", 5], ["admin fakultas", 6]]) {
+        const ctx = await browser.newContext();
+        const page = await ctx.newPage();
+        await page.goto(B + "/404.html", { waitUntil: "domcontentloaded" });
+        await page.evaluate((r) => {
+            localStorage.setItem("kkn_token", "token-uji-123");
+            localStorage.setItem("kkn_user", JSON.stringify({ name: "Uji", role: r, role_name: "x" }));
+        }, peran);
+        await page.route("**/localhost:8090/**", (route) => route.fulfill({
+            status: 200, contentType: "application/json",
+            body: JSON.stringify({ data: [], meta: { total: 0, page: 1, total_pages: 1 } }) }));
+        await page.goto(B + "/data-kkn/", { waitUntil: "networkidle" });
+        await page.waitForTimeout(200);
+        const n = await page.evaluate(() =>
+            [...document.querySelectorAll("button")].filter(b => b.textContent.trim() === "Keluar").length);
+        lapor(n === 1, `${nama}: tepat satu tombol Keluar (${n})`);
+        await ctx.close();
+    }
+}
+
+// ---------- 20. Tiap peran mendarat di pekerjaannya ----------
+{
+    const tujuan = { 1: "/data-kkn/", 2: "/data-kkn/?bayar=0", 3: "/data-kkn/",
+                     4: "/penilaian/", 5: "/sertifikat/", 6: "/data-kkn/" };
+    for (const [peran, harap] of Object.entries(tujuan)) {
+        const ctx = await browser.newContext();
+        const page = await ctx.newPage();
+        // URUTAN PENTING: rute Playwright dijalankan terakhir-didaftar-duluan.
+        // Kalau catch-all didaftarkan SESUDAH /auth/login, ia menelan mock
+        // login dan halaman tidak pernah pindah — ujinya gagal menuduh kode.
+        // Sudah pernah kejadian; lihat catatan di LEDGER 4 September 2026.
+        await page.route("**/localhost:8090/**", (route) => route.fulfill({
+            status: 200, contentType: "application/json",
+            body: JSON.stringify({ data: [], meta: { total: 0, page: 1, total_pages: 1 } }) }));
+        await page.route("**/localhost:8090/auth/login", (route) => route.fulfill({
+            status: 200, contentType: "application/json",
+            body: JSON.stringify({ status: "ok", data: { token: "t",
+                user: { name: "Uji", role: Number(peran), role_name: "x" } } }) }));
+        await page.goto(B + "/login/", { waitUntil: "networkidle" });
+        await page.fill("#uname", "x");
+        await page.fill("#password", "y");
+        await page.click("#tombolMasuk");
+        await page.waitForTimeout(500);
+        const dapat = page.url().replace(B, "");
+        lapor(dapat === harap, `peran ${peran} mendarat di ${harap} (${dapat})`);
+        await ctx.close();
+    }
+}
+
+// ---------- 21. ?bayar= benar-benar menyaring ----------
+{
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    await page.goto(B + "/404.html", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => {
+        localStorage.setItem("kkn_token", "token-uji-123");
+        localStorage.setItem("kkn_user", JSON.stringify({ name: "Uji", role: 2, role_name: "Pembayaran" }));
+    });
+    const diminta = [];
+    await page.route("**/localhost:8090/**", (route) => {
+        diminta.push(route.request().url());
+        route.fulfill({ status: 200, contentType: "application/json",
+            body: JSON.stringify({ data: [], meta: { total: 0, page: 1, total_pages: 1 } }) });
+    });
+    await page.goto(B + "/data-kkn/?bayar=0", { waitUntil: "networkidle" });
+    await page.waitForTimeout(300);
+    lapor(diminta.some((u) => /[?&]bayar=0/.test(u)),
+        "?bayar=0 diteruskan ke server, bukan ditelan");
+    const aktif = await page.$eval('#segmenBayar button[aria-pressed="true"]', (e) => e.textContent);
+    lapor(aktif === "Belum bayar", `tombol saringan yang aktif ikut benar (${aktif})`);
+    // Uji negatif: nilai yang bukan 0/1/2 tidak boleh diteruskan.
+    diminta.length = 0;
+    await page.goto(B + "/data-kkn/?bayar=sembarang", { waitUntil: "networkidle" });
+    await page.waitForTimeout(300);
+    lapor(!diminta.some((u) => /[?&]bayar=/.test(u)),
+        "nilai bayar yang tidak dikenali diabaikan, bukan diteruskan");
+    await ctx.close();
 }
 
 await browser.close();

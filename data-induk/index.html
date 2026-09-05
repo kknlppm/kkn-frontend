@@ -71,6 +71,33 @@ if (requireLogin()) {
     // Keempat jenis data digambarkan sebagai data, bukan sebagai empat
     // salinan kode. Yang berbeda hanya kolom dan medan formulirnya.
     const ENTITAS = {
+        // Mahasiswa ditaruh paling depan: 1.706 baris, jauh lebih sering
+        // dicari daripada sembilan prodi. Sampai 5 September 2026 entitas ini
+        // TIDAK ADA sama sekali — koleksinya hanya bisa diisi migrasi.
+        students: {
+            label: "Mahasiswa", tunggal: "mahasiswa", jalur: backend.master.students,
+            kolom: [
+                { judul: "NIM", ambil: function (r) { return r.nim; }, kelas: "kode whitespace-nowrap" },
+                { judul: "Nama", ambil: function (r) { return r.name; }, kelas: "font-medium" },
+                { judul: "Kelas", ambil: function (r) { return r.kelas || "—"; }, kelas: "kode" },
+                { judul: "Email", ambil: function (r) { return r.email || "—"; }, kelas: "text-xs text-tinta-redup" },
+            ],
+            medan: [
+                { nama: "nim", label: "NIM", wajib: true, mono: true,
+                  petunjuk: "6 sampai 15 angka, tanpa spasi atau huruf." },
+                { nama: "name", label: "Nama lengkap", wajib: true },
+                { nama: "program_id", label: "Program studi", tipe: "pilih",
+                  sumber: backend.master.programs + "?limit=200", nilai: "id", teks: "prodi" },
+                { nama: "kelas", label: "Kelas" },
+                { nama: "email", label: "Email", tipe: "email" },
+                { nama: "phone", label: "Telepon" },
+                { nama: "domisili", label: "Domisili" },
+            ],
+            keluar: function (f) {
+                return { nim: f.nim, name: f.name, program_id: f.program_id,
+                         kelas: f.kelas, email: f.email, phone: f.phone, domisili: f.domisili };
+            },
+        },
         programs: {
             label: "Program studi", tunggal: "program studi", jalur: backend.master.programs,
             kolom: [

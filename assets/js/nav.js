@@ -199,6 +199,25 @@ export function pasang(judul, keterangan) {
         keterangan || "LPPM · Universitas Al-Ghifari"));
     wrap.appendChild(kiri);
 
+    // Tanpa sidebar, identitas dan Keluar HARUS ada di kepala.
+    //
+    // Peran bertujuan tunggal (mahasiswa, pembayaran) tidak diberi sidebar —
+    // menu satu butir bukan menu. Tapi tombol Keluar tinggal di kaki sidebar,
+    // jadi tanpa cabang ini kedua peran itu tidak punya cara keluar sama
+    // sekali. Cacat yang lahir bersama sidebar-nya sendiri.
+    if (!adaSisi) {
+        const kanan = el("div", "flex items-center gap-4 shrink-0 ml-auto");
+        const ident = el("div", "text-right hidden sm:block");
+        ident.appendChild(el("div", "text-sm font-medium leading-tight", u.name || ""));
+        ident.appendChild(el("div", "eyebrow text-tinta-redup", u.role_name || ""));
+        kanan.appendChild(ident);
+        const keluar = el("button", "tombol-halus", "Keluar");
+        keluar.type = "button";
+        keluar.addEventListener("click", function () { logout(); });
+        kanan.appendChild(keluar);
+        wrap.appendChild(kanan);
+    }
+
     head.appendChild(wrap);
     bar.after(head);
 
